@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+</head>
+<body>
+    <h1>Chat</h1>
+
+    <form id="send-form" action="#">
+        Send a message:
+        <input type="text" id="message-textbox" disabled />
+        <button id="send-button" type="submit" disabled>Send</button>
+    </form>
+
+    <ul id="messages-list"></ul>
+
+    <script src="/lib/signalr/signalr.js"></script>
+    <script type="text/javascript">
+        // Bind DOM elements
+        var sendForm = document.getElementById("send-form");
+        var sendButton = document.getElementById("send-button");
+        var messagesList = document.getElementById("messages-list");
+        var messageTextBox = document.getElementById("message-textbox");
+
+        function appendMessage(content) {
+            var li = document.createElement("li");
+            li.innerText = content;
+            messagesList.appendChild(li);
+        }
+
+        var connection = new signalR.HubConnection("/hubs/chat");
+
+        sendForm.addEventListener("submit", function (evt) {
+            evt.preventDefault();
+            var message = messageTextBox.value;
+            messageTextBox.value = "";
+            connection.send("Send", message);
+        });
+
+        connection.on("SendMessage", function (sender, message) {
+            appendMessage(sender + ': ' + message);
+        });
+
+        connection.on("SendAction", function (sender, action) {
+            appendMessage(sender + ' ' + action);
+        });
+
+        connection.start().then(function() {
+            messageTextBox.disabled = false;
+            sendButton.disabled = false;
+        });
+    </script>
+</body>
+</html>
