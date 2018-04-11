@@ -42,6 +42,10 @@
             appendMessage(sender + ': ' + message);
         });
 
+        connection.on("Changes", function (data) {
+            appendMessage(data);
+        });
+
         connection.on("SendAction", function (sender, action) {
             appendMessage(sender + ' ' + action);
         });

@@ -6,14 +6,14 @@ namespace PxDRAW.SignalR.ChangeFeed
 {
     using System.Collections.Generic;
     using System.Linq;
-    using System.Reflection.Metadata;
     using System.Threading.Tasks;
     using Microsoft.ApplicationInsights;
     using Microsoft.AspNetCore.SignalR;
     using Microsoft.Azure.Documents.ChangeFeedProcessor;
+    using Newtonsoft.Json;
     using PxDRAW.SignalR.Hubs;
 
-    internal class DocumentFeedObserver
+    internal class DocumentFeedObserver : IChangeFeedObserver
     {
         private readonly IHubContext<ClientHub> hubContext;
         private readonly TelemetryClient telemetryClient;
@@ -37,9 +37,9 @@ namespace PxDRAW.SignalR.ChangeFeed
             return Task.CompletedTask;
         }
 
-        public async Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyList<Document> documents)
+        public async Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyList<Microsoft.Azure.Documents.Document> documents)
         {
-            await this.hubContext.Clients.All.SendAsync("Changes", documents.ToList());
+            await this.hubContext.Clients.All.SendAsync("Changes", JsonConvert.SerializeObject(documents.ToList()));
         }
-        }
+    }
 }
