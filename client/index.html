@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" href="css/canvas.css" type="text/css" charset="UTF-8" />
+    <script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script type="text/javascript" src="node_modules/knockout/build/output/knockout-latest.js"></script>
+    <script type="text/javascript" src="node_modules/jquery.panzoom/dist/jquery.panzoom.min.js"></script>
+    <script type="text/javascript" src="node_modules/jquery.mousewheel/jquery.mousewheel.js"></script>
+    <script type="text/javascript" src="built/main.js"></script>
+    <script type="text/javascript" src="built/canvas.js"></script>
+    <script type="text/javascript" src="built/updateClient.js"></script>
+
+</head>
+
+<body>
+    <div class="header">
+        <img src="img/CosmosDB_gray.svg">
+        <div class="text-container">
+            <div class="title">Azure Cosmos DB <strong>PxDRAW</strong></div>
+            <p class="description">Welcome to Azure Cosmos DB PxDRAW! PxDRAW is a collaborative project. Draw on the canvas, one pixel a time.</p>
+        </div>
+    </div>
+    <div class="main-area">
+        <div class="palette-container">
+            <div data-bind="foreach: availableColors">
+                <div class="palette-button" data-bind="style: { backgroundColor: $parent.toRGBA($index()) }, css: { selected: $parent.selectedColorIndex() === $index() }, click: $parent.selectColorIndex.bind($parent, $index())"></div>
+            </div>
+
+            <div data-bind="text: currentPositionStr"></div>
+        </div>
+        <div id="canvas-container">
+            <canvas id="canvas" width="1000" height="1000"></canvas>
+        </div>
+        <div class="tweet-area">
+            <a href="https://twitter.com/intent/tweet?button_hashtag=LoveCosmosDB&ref_src=twsrc%5Etfw" class="twitter-hashtag-button" data-show-count="false">Tweet #LoveCosmosDB</a>
+            <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+    </div>
+
+</body>
+
+</html>

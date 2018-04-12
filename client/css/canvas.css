@@ -1,0 +1,68 @@
+.header {
+    background-color: black;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+    display: flex;
+    padding: 10px;
+}
+
+.text-container {
+    display: flex;
+    flex-direction: column;
+    margin-left: 20px;
+}
+
+.title {
+    font-size: 20px;
+}
+
+.description {
+    font-size: 15px;
+    margin-top: 10px;
+}
+
+.main-area {
+    display: flex;
+    margin-top: 10px;
+}
+
+.palette-container {
+    width: 80px;
+}
+
+.palette-button {
+    width: 50px;
+    height: 50px;
+    margin: 10px;
+    border: 1px solid black;
+    opacity: 0.3;
+}
+
+.palette-button.selected {
+    border: 3px solid #333333;
+    margin: 7px;
+    opacity: 1;
+}
+
+#canvas-container {
+    margin-left: 10px;
+    background-color: pink;
+    width: 1000px;
+    height: 1000px;
+    border: 1px solid black;
+}
+
+#canvas {
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+}
+
+#subcanvas {
+    visibility: hidden;
+}
+
+.tweet-area {
+    margin: 10px;
+}
