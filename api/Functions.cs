@@ -141,7 +141,7 @@ namespace pxdraw.api
                 return req.CreateErrorResponse(HttpStatusCode.InternalServerError, $"Could not insert pixels. Refer to {context.InvocationId} for details.");
             }
 
-            return req.CreateResponse(HttpStatusCode.Accepted);
+            return req.CreateResponse(HttpStatusCode.Created);
         }
 
         private static string HeadersToString(HttpRequestHeaders headers)

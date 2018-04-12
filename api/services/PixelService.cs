@@ -13,8 +13,9 @@ namespace pxdraw.api.services
         private DocumentClient _Client;
         private Uri _CollectionUri;
         private static PixelService _Singleton;
-        private PixelService(DocumentClient client) {
+        private PixelService(DocumentClient client, Uri collectionUri) {
             _Client = client;
+            _CollectionUri = collectionUri;
         }
 
         public static PixelService Singleton(Uri collectionUri = null, DocumentClient client = null)
@@ -22,7 +23,8 @@ namespace pxdraw.api.services
             if(_Singleton == null)
             {
                 var _client = client ?? CreateDefaultClient();
-                _Singleton = new PixelService(_client);
+                var _collectionUri = collectionUri ?? CreateDefaultCollectionUri();
+                _Singleton = new PixelService(_client, _collectionUri);
             }
 
             return _Singleton;

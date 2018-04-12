@@ -111,7 +111,7 @@ class Main {
     private fetchMetadata() {
         $.ajax({
             type: 'GET',
-            url: '/api/metadata',
+            url: 'http://localhost:7071/api/metadata',
             beforeSend: function (request) {
                 request.setRequestHeader('x-ms-client-principal-id', Main.LOCALHOST_CLIENT_PRINCIPAL_ID);
             },
@@ -171,10 +171,12 @@ class Main {
         $.ajax({
             type: 'POST',
             url: this.updatePixelEndpoint,
+            dataType: "json",
+            contentType:"application/json",
             beforeSend: function (request) {
                 request.setRequestHeader('x-ms-client-principal-id', Main.LOCALHOST_CLIENT_PRINCIPAL_ID);
             },
-            data: data,
+            data: JSON.stringify(data, null, " "),
             success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
                 console.log("Data: " + data + "\nStatus: " + textStatus);
             }
