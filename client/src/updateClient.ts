@@ -4,7 +4,6 @@
  */
 
  interface UpdateClientParameters {
-     connectionUrl: string;
      onConnected?: () => void;
      onDisconnected?: () => void;
      onReceived: (data: OnPixelUpdateData) => void;
@@ -15,6 +14,14 @@
     constructor(params: UpdateClientParameters) {
         this.params = params;
 
+    }
+
+    /**
+     * Initialize
+     * @param url
+     */
+    public init(url: string) {
+        // TODO generate fake updates for now
         setInterval(this.generateRandomUpdate.bind(this), 1);
     }
 

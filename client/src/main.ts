@@ -41,7 +41,7 @@ interface FetchMetadataResponseData {
 }
 
 class Main {
-    private static readonly PIXEL_UPDATE_URL = 'signalR/site';
+    private static readonly LOCALHOST_CLIENT_PRINCIPAL_ID = 'PrincicalId';
 
     // state
     public canvas: Canvas;
@@ -60,11 +60,14 @@ class Main {
         });
 
         this.updateClient = new UpdateClient({
-            connectionUrl: Main.PIXEL_UPDATE_URL,
             onReceived: this.onPixelUpdateFromRemote.bind(this)
         });
 
         this.fetchMetadata();
+
+        // TODO chain this to fetch metadata in order to get valid URL
+        this.updateClient.init(this.websocketEndpoint);
+        this.fetchBoard();
     }
 
     private processFetchBoardResponse(data: FetchBoardResponseData) {
@@ -109,21 +112,21 @@ class Main {
         $.ajax({
             type: 'GET',
             url: '/api/metadata',
+            beforeSend: function (request) {
+                request.setRequestHeader('x-ms-client-principal-id', Main.LOCALHOST_CLIENT_PRINCIPAL_ID);
+            },
             success: (data: FetchMetadataResponseData, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
                  console.log("Data: " + data + "\nStatus: " + status);
                  this.loginEndpoint = data.loginEndpoint;
                  this.getBoardEndpoint = data.getBoardEndpoint;
                  this.updatePixelEndpoint = data.updatePixelEndpoint;
                  this.websocketEndpoint = data.websocketEndpoint;
-
-                 // TODO move out
-                 this.fetchBoard();
              }
          });
     }
 
     /**
-     * TODO: return proper promises
+     * TODO: return proper promise
      */
     private fetchBoard() {
         /* Uncomment this to fetch the real board
@@ -166,10 +169,13 @@ class Main {
         });
 
         $.ajax({
-           type: 'POST',
-           url: this.updatePixelEndpoint,
-           data: data,
-           success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
+            type: 'POST',
+            url: this.updatePixelEndpoint,
+            beforeSend: function (request) {
+                request.setRequestHeader('x-ms-client-principal-id', Main.LOCALHOST_CLIENT_PRINCIPAL_ID);
+            },
+            data: data,
+            success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
                 console.log("Data: " + data + "\nStatus: " + textStatus);
             }
         });
