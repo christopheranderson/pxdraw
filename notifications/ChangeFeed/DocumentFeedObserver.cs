@@ -39,7 +39,15 @@ namespace PxDRAW.SignalR.ChangeFeed
 
         public async Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyList<Microsoft.Azure.Documents.Document> documents)
         {
-            await this.hubContext.Clients.All.SendAsync("Changes", JsonConvert.SerializeObject(documents.ToList()));
+            try
+            {
+                await this.hubContext.Clients.All.SendAsync("Changes", JsonConvert.SerializeObject(documents.ToList()));
+            }
+            catch (System.Exception ex)
+            {
+                // Catching to avoid Observer to close due to unhandled exception
+                this.telemetryClient.TrackException(ex);
+            }
         }
     }
 }
