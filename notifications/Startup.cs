@@ -62,6 +62,7 @@ namespace PxDRAW.SignalR
 
             DocumentFeedObserverFactory documentFeedObserver = new DocumentFeedObserverFactory(this.InsightsClient, signalRHubContext);
             this.changeFeedEventHost.RegisterObserverFactoryAsync(documentFeedObserver).Wait();
+            this.changeFeedEventHostStarted = true;
         }
 
         protected void DisposeResources()

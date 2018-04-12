@@ -8,6 +8,10 @@ namespace PxDRAW.SignalR.Models
 
     internal class CosmosDbConfiguration
     {
+        public string DatabaseName { get; set; }
+
+        public string CollectionName { get; set; }
+
         public string Endpoint { get; set; }
 
         public string MasterKey { get; set; }

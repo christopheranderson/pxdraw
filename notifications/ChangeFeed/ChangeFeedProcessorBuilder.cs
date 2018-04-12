@@ -23,8 +23,8 @@ namespace PxDRAW.SignalR.ChangeFeed
         {
             this.monitoredCollection = new DocumentCollectionInfo()
             {
-                DatabaseName = "pxdraw",
-                CollectionName = "pixels",
+                DatabaseName = cosmosDbConfiguration.DatabaseName,
+                CollectionName = cosmosDbConfiguration.CollectionName,
                 ConnectionPolicy = ChangeFeedProcessorBuilder.BuildConnectionPolicy(cosmosDbConfiguration),
                 Uri = new Uri(cosmosDbConfiguration.Endpoint),
                 MasterKey = cosmosDbConfiguration.MasterKey,
@@ -37,8 +37,8 @@ namespace PxDRAW.SignalR.ChangeFeed
         {
             this.leasesCollection = new DocumentCollectionInfo()
             {
-                DatabaseName = "pxdraw",
-                CollectionName = "leases",
+                DatabaseName = cosmosDbConfiguration.DatabaseName,
+                CollectionName = cosmosDbConfiguration.CollectionName,
                 ConnectionPolicy = ChangeFeedProcessorBuilder.BuildConnectionPolicy(cosmosDbConfiguration),
                 Uri = new Uri(cosmosDbConfiguration.Endpoint),
                 MasterKey = cosmosDbConfiguration.MasterKey,
