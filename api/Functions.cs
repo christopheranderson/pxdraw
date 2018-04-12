@@ -9,6 +9,7 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using pxdraw.api.models;
+using pxdraw.api.services;
 
 namespace pxdraw.api
 {
@@ -16,7 +17,29 @@ namespace pxdraw.api
     {
         public static string boardId = "default";
 
-        // Returns metadata about all the endpoints 
+        /// <summary>
+        /// Retrieves metadata about current pxdraw application
+        /// 
+        /// GET /api/metadata
+        /// 
+        /// Returns
+        /// Status Codes:
+        /// - 200 if the request was a success.
+        /// - 5xx iindicates the service is unhealthy.
+        /// Content-type: application/json; utf8
+        /// Body:
+        /// {
+        ///     "getBoardEndpoint":string - uri for the board blob,
+        ///     "loginEndpoint":string - uri for the login endpoint,
+        ///     "updatePixelEndpoint":string - uri for the update pixel endpoint,
+        ///     "websocketEndpoint":string - uri for the SignalR pixel update notifications endpoint
+        /// }
+        /// 
+        /// </summary>
+        /// <param name="req"></param>
+        /// <param name="log"></param>
+        /// <param name="context"></param>
+        /// <returns></returns>        
         [FunctionName("metadata")]
         public static async Task<HttpResponseMessage> Metadata([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)]HttpRequestMessage req, ILogger log, ExecutionContext context)
         {
@@ -27,13 +50,38 @@ namespace pxdraw.api
                 WebsocketEndpoint = "",
             };
 
-            return req.CreateResponse<Metadata>(HttpStatusCode.OK, metadata); ;
+            return req.CreateResponse(HttpStatusCode.OK, metadata); ;
         }
 
+        /// <summary>
+        /// Inserts pixel updates into Cosmos DB
+        /// 
+        /// POST /api/update-pixel
+        /// [
+        ///     {
+        ///         "x":int[0-999] - x coordinate for the pixel,
+        ///         "y":int[0-999] - y coordinate for the pixel,
+        ///         "color":int[0-15] - color enum value for the pixel
+        ///     } [1-*]
+        /// ]
+        /// Returns
+        /// Status Codes:
+        /// - 201 if the request was sucessfully inserted
+        /// - 401 if the user is not authenticated. Client should reauthenticate.
+        /// - 429 if the service is currently overloaded. Client should backoff.
+        /// - 5xx indicates the service is unhealthy.
+        /// </summary>
+        /// <param name="req"></param>
+        /// <param name="log"></param>
+        /// <param name="context"></param>
+        /// <returns></returns>
         [FunctionName("update-pixel")]
         public static async Task<HttpResponseMessage> UpdatePixel([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequestMessage req, ILogger log, ExecutionContext context)
         {
             string userId;
+            DateTime time = new DateTime();
+
+            // Validate the user is authenticated
             try
             {
                 // "x-ms-client-principal-id" is the flag that this is a valid token
@@ -48,17 +96,36 @@ namespace pxdraw.api
 
             // TODO: User throttling
 
+            // TODO: Admin should be the only one allowed to insert more than 1 pixel
+
+            // Grab pixels from request
+            Pixel[] pixels;
             try
             {
-                Pixel pixel = await req.Content.ReadAsAsync<Pixel>();
+                pixels = await req.Content.ReadAsAsync<Pixel[]>();
+                foreach(var pixel in pixels)
+                {
+                    pixel.UserId = userId;
+                    pixel.LastUpdated = time;
+                }
             }
             catch (Exception err)
             {
                 log.LogError(err);
                 return req.CreateErrorResponse(HttpStatusCode.BadRequest, $"Could not create pixel object from body content. Refer to {context.InvocationId} for details.");
             }
-
-            // TODO: Upsert pixel to Cosmos DB
+            
+            // Insert pixels into Cosmos DB
+            try
+            {
+                PixelService ps = PixelService.Singleton();
+                await ps.InsertBatch(pixels);
+            }
+            catch (Exception err)
+            {
+                log.LogError(err);
+                return req.CreateErrorResponse(HttpStatusCode.InternalServerError, $"Could not insert pixels. Refer to {context.InvocationId} for details.");
+            }
 
             return req.CreateResponse(HttpStatusCode.Accepted);
         }

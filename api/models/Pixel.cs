@@ -15,8 +15,6 @@ namespace pxdraw.api.models
         public int Y { get; set; }
         [JsonProperty("color", Required = Required.Always)]
         public int Color { get; set; }
-        [JsonProperty("boardId")]
-        public string BoardId { get; set; }
         [JsonProperty("userId")]
         public string UserId { get; set; }
         [JsonProperty("lastUpdated")]
