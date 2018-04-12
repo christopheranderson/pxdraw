@@ -59,6 +59,10 @@
     image-rendering: pixelated;
 }
 
+#subcanvas {
+    visibility: hidden;
+}
+
 .tweet-area {
     margin: 10px;
 }

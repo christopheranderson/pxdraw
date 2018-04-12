@@ -1,5 +1,10 @@
 /**
  * Main entry point.
+ *
+ * Note:
+ * We use "canvas" for all html5-canvas related code.
+ * We use "board" for the actual representation of the board coming from the backend.
+ *
  */
 interface Point2D {
     x: number;
@@ -18,18 +23,21 @@ interface PixelUpdate {
     colorIndex: number;
 }
 
-interface FetchImageResponseData {
+interface FetchBoardResponseData {
     blob: ArrayBuffer; // the actual image (array of 4-bit integers)
     LSN: number; // corresponding LSN
-}
-
-interface PixelUpdatesResponseData {
-    success: boolean;
 }
 
 interface OnPixelUpdateData {
     update: PixelUpdate;
     LSN: number;
+}
+
+interface FetchMetadataResponseData {
+    loginEndpoint: string;
+    getBoardEndpoint: string;
+    updatePixelEndpoint: string;
+    websocketEndpoint: string;
 }
 
 class Main {
@@ -38,9 +46,13 @@ class Main {
     // state
     public canvas: Canvas;
     private receivedUpdates: OnPixelUpdateData[] = []; // Assume for now they should be ordered by LSN asc
-    private boardState: Uint8ClampedArray;
 
     private updateClient: UpdateClient;
+
+    private loginEndpoint: string;
+    private getBoardEndpoint: string;
+    private updatePixelEndpoint: string;
+    private websocketEndpoint: string;
 
     public constructor() {
         this.canvas = new Canvas({
@@ -51,10 +63,13 @@ class Main {
             connectionUrl: Main.PIXEL_UPDATE_URL,
             onReceived: this.onPixelUpdateFromRemote.bind(this)
         });
+
+        this.fetchMetadata();
     }
 
-    private processFetchBoardResponse(data: FetchImageResponseData) {
-        const image16Color = Main.unpackBoardBlob(new Uint8Array(data.blob));
+    private processFetchBoardResponse(data: FetchBoardResponseData) {
+        const board8Uint = Main.unpackBoardBlob(new Uint8Array(data.blob));
+        this.canvas.renderBoard(board8Uint);
     }
 
     private onPixelUpdateFromRemote(data: OnPixelUpdateData) {
@@ -67,7 +82,7 @@ class Main {
      * @param updates
      */
     private onPixelUpdatesFromUI(updates: PixelUpdate[]) {
-        this.requestPixelUpdates(updates);
+        this.submitPixelUpdates(updates);
     }
 
     /**
@@ -87,22 +102,75 @@ class Main {
         return result;
     }
 
+    /**
+     * TODO: return proper promises and fetch board outside
+     */
+    private fetchMetadata() {
+        $.ajax({
+            type: 'GET',
+            url: '/api/metadata',
+            success: (data: FetchMetadataResponseData, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
+                 console.log("Data: " + data + "\nStatus: " + status);
+                 this.loginEndpoint = data.loginEndpoint;
+                 this.getBoardEndpoint = data.getBoardEndpoint;
+                 this.updatePixelEndpoint = data.updatePixelEndpoint;
+                 this.websocketEndpoint = data.websocketEndpoint;
+
+                 // TODO move out
+                 this.fetchBoard();
+             }
+         });
+    }
+
+    /**
+     * TODO: return proper promises
+     */
     private fetchBoard() {
-        $.get("/api/build-demo/board",
-            (data: FetchImageResponseData, status: number) => {
+        /* Uncomment this to fetch the real board
+         *
+
+        $.get(this.getBoardEndpoint,
+            (data: FetchBoardResponseData) => {
                 alert("Data: " + data + "\nStatus: " + status);
                 this.processFetchBoardResponse(data);
             });
+
+        */
+
+        /* TODO: testing code: generate fake board for now */
+        setTimeout(() => {
+            // Randomize
+            const buffer = new Uint8Array(Canvas.BOARD_WIDTH_PX * Canvas.BOARD_HEIGHT_PX / 2);
+            for (let i=0; i<buffer.byteLength; i++) {
+                const color1 = Math.floor(Math.random() * 15);
+                const color2 = 15;
+                buffer[i] = color1 + (color2 << 4); // Always same color alternating to check endianness
+            }
+
+            this.processFetchBoardResponse({
+                blob: buffer.buffer,
+                LSN: 0
+            });
+        }, 0);
+        /* ******************************* */
+
     }
 
-    private requestPixelUpdates(updates: PixelUpdate[]) {
-        console.log('Submit updates', updates);
+    private submitPixelUpdates(updates: PixelUpdate[]) {
+        const data = updates.map((update: PixelUpdate) => {
+            return {
+                x: update.position.x,
+                y: update.position.y,
+                color: update.colorIndex
+            }
+        });
+
         $.ajax({
            type: 'POST',
-           url: '/api/build-demo/pixel',
-           data: updates,
-           success: (data: PixelUpdatesResponseData, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
-                console.log("Data: " + data + "\nStatus: " + status);
+           url: this.updatePixelEndpoint,
+           data: data,
+           success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
+                console.log("Data: " + data + "\nStatus: " + textStatus);
             }
         });
     }

@@ -41,7 +41,15 @@ class Canvas {
     private isFreehandEnabled = true;
     private pendingDrawnUpdates: PixelUpdate[] = [];
     private isMouseDown: boolean = false;
-    private boardState: Uint8ClampedArray;
+
+     // This array buffer will hold color data to be drawn to the canvas.
+     private buffer: ArrayBuffer;
+     // This view into the buffer is used to construct the PixelData object
+     // for drawing to the canvas
+     private readBuffer: Uint8ClampedArray;
+     // This view into the buffer is used to write.  Values written should be
+     // 32 bit colors stored as AGBR (rgba in reverse).
+     private writeBuffer: Uint32Array;
 
     // private queuedUpdate: PixelUpdate[] = [];
 
@@ -84,7 +92,9 @@ class Canvas {
         this.availableColors = ko.observableArray(Canvas.COLOR_PALETTE_16);
         this.selectedColorIndex = ko.observable(0);
 
-        this.boardState = new Uint8ClampedArray(Canvas.BOARD_WIDTH_PX * Canvas.BOARD_HEIGHT_PX * 4);
+        this.buffer = new ArrayBuffer(Canvas.BOARD_WIDTH_PX * Canvas.BOARD_HEIGHT_PX * 4);
+        this.readBuffer = new Uint8ClampedArray(this.buffer);
+        this.writeBuffer = new Uint32Array(this.buffer);
 
         // TODO REMOVE THIS
         this.loadDummyImage();
@@ -103,8 +113,8 @@ class Canvas {
      * For testing make sure something's there
      */
     private loadDummyImage() {
-        this.context.fillStyle = "white";
-        this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        // this.context.fillStyle = "white";
+        // this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // get the size of our canvas
         var canvas_width = this.canvas.width,
@@ -246,7 +256,54 @@ class Canvas {
     }
 
     public queuePixelUpdate(data: PixelUpdate) {
-        // for now, just draw it!
+        // for now, just draw it
         this.paintPixel(data.position, data.colorIndex);
+    }
+
+    /**
+     * The internal color palette structure stores colors as AGBR (reversed RGBA) to make writing to the color buffer easier.
+     * @param colorIndex
+     * @return 32-bit ABGR value corresponding to the color index. Use black if unknown.
+     */
+    private colorIndex2ABGR(colorIndex: number) {
+        if (colorIndex < 0 || colorIndex >= this.availableColors().length) {
+            colorIndex = 0;
+        }
+        const color = this.availableColors()[colorIndex];
+        const dataView = new DataView(new ArrayBuffer(4));
+        dataView.setUint8(0, color.a);
+        dataView.setUint8(1, color.b);
+        dataView.setUint8(2, color.g);
+        dataView.setUint8(3, color.r);
+        return dataView.getUint32(0);
+    }
+
+    private paintBuffer(position: Point2D, colorIndex: number) {
+        const i = Canvas.coordinates2BufferIndex(position);
+        this.writeBuffer[i] = this.colorIndex2ABGR(colorIndex);
+    }
+
+    private static coordinates2BufferIndex(position: Point2D): number {
+        return position.y * Canvas.BOARD_WIDTH_PX + position.x;
+    }
+
+    public renderBoard(board: Uint8Array) {
+        // For now, just draw it directly onto canvas
+        let x = 0;
+        let y = 0;
+        for (let i = 0; i<board.byteLength; i++) {
+            const colorIndex = board[i];
+            // this.paintPixel({ x:x, y:y }, colorIndex);
+            this.paintBuffer({ x:x, y:y }, colorIndex);
+
+            if (++x >= Canvas.BOARD_WIDTH_PX) {
+                x = 0;
+                y++;
+            }
+        }
+
+        // Now paint over canvas
+        const imageData = new ImageData(this.readBuffer, Canvas.BOARD_WIDTH_PX, Canvas.BOARD_HEIGHT_PX);
+        this.context.putImageData(imageData, 0, 0);
     }
 }
