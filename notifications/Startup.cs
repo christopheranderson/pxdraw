@@ -9,7 +9,6 @@ namespace PxDRAW.SignalR
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.AspNetCore.SignalR;
-    using Microsoft.Azure.Documents.ChangeFeedProcessor;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using PxDRAW.SignalR.ChangeFeed;
@@ -18,16 +17,10 @@ namespace PxDRAW.SignalR
 
     internal class Startup
     {
-        private ChangeFeedEventHost changeFeedEventHost;
-        private bool changeFeedEventHostStarted = false;
-        private string environmentIdentifier;
-
-        public Startup(IConfiguration configuration, TelemetryClient telemetryClient, IHostingEnvironment env)
+        public Startup(IConfiguration configuration, TelemetryClient telemetryClient, IHostingEnvironment env, IServiceProvider serviceProvider)
         {
             this.Configuration = configuration;
             this.InsightsClient = telemetryClient;
-            var computerName = Environment.GetEnvironmentVariable("COMPUTERNAME") ?? string.Empty;
-            this.environmentIdentifier = $"{env.ApplicationName}-{computerName}";
         }
 
         public IConfiguration Configuration { get; }
@@ -36,32 +29,12 @@ namespace PxDRAW.SignalR
 
         public void ConfigureServices(IServiceCollection services)
         {
-            try
-            {
-                string hostName = Guid.NewGuid().ToString();
-                this.InsightsClient.TrackEvent($"Creating ChangeFeedEventHost in environment {this.environmentIdentifier}...");
-                CosmosDbConfiguration cosmosDbConfigurationForMonitoring = this.BuildConfigurationForSection("CosmosDB");
-                CosmosDbConfiguration cosmosDbConfigurationForLeases = this.BuildConfigurationForSection("CosmosDBLeases");
-                this.InsightsClient.TrackEvent($"Detected configuration for PxDRAW collection: {cosmosDbConfigurationForMonitoring.ToString()}");
-                this.InsightsClient.TrackEvent($"Detected configuration for PxDRAW leases: {cosmosDbConfigurationForLeases.ToString()}");
-                ChangeFeedProcessorBuilder changeFeedProcessorBuilder = new ChangeFeedProcessorBuilder();
-                this.changeFeedEventHost = changeFeedProcessorBuilder
-                                                .WithHostName(hostName)
-                                                .WithLeasePrefix(this.environmentIdentifier)
-                                                .WithMonitoredCollection(cosmosDbConfigurationForMonitoring)
-                                                .WithLeasesCollection(cosmosDbConfigurationForLeases).Build();
-                this.InsightsClient.TrackEvent("ChangeFeedEventHost created.");
-            }
-            catch (System.Exception ex)
-            {
-                this.InsightsClient.TrackException(ex);
-            }
-
             services.AddSignalR();
+            services.AddSingleton<IChangeFeedReader>(new ChangeFeedReader(this.InsightsClient, this.BuildConfigurationForSection("CosmosDB")));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime applicationLifetime, IHubContext<ClientHub> signalRHubContext)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime applicationLifetime, IHubContext<ClientHub> signalRHubContext, IChangeFeedReader changeFeedReader)
         {
             if (env.IsDevelopment())
             {
@@ -75,36 +48,8 @@ namespace PxDRAW.SignalR
                 routes.MapHub<ClientHub>("/hubs/chat");
             });
 
-            applicationLifetime.ApplicationStopping.Register(this.OnStop);
-            try
-            {
-                this.InsightsClient.TrackEvent("Initializing ChangeFeedEventHost...");
-                DocumentFeedObserverFactory documentFeedObserver = new DocumentFeedObserverFactory(this.InsightsClient, signalRHubContext);
-                this.changeFeedEventHost.RegisterObserverFactoryAsync(documentFeedObserver).Wait();
-                this.changeFeedEventHostStarted = true;
-                this.InsightsClient.TrackEvent("ChangeFeedEventHost initialized.");
-            }
-            catch (System.Exception ex)
-            {
-                this.InsightsClient.TrackException(ex);
-            }
-        }
-
-        protected void OnStop()
-        {
-            try
-            {
-                if (this.changeFeedEventHost != null && this.changeFeedEventHostStarted)
-                {
-                    this.InsightsClient.TrackEvent("Stopping ChangeFeedEventHost...");
-                    this.changeFeedEventHost.UnregisterObserversAsync().Wait();
-                    this.InsightsClient.TrackEvent("ChangeFeedEventHost stopped.");
-                }
-            }
-            catch (System.Exception ex)
-            {
-                this.InsightsClient.TrackException(ex);
-            }
+            changeFeedReader.RegisterHub(signalRHubContext);
+            changeFeedReader.Start();
         }
 
         private CosmosDbConfiguration BuildConfigurationForSection(string sectionName)
