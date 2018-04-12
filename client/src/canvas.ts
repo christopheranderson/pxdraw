@@ -1,23 +1,13 @@
-interface Point2D {
-    x: number;
-    y: number;
-}
-
-interface CanvasColor {
-    r: number;
-    g: number;
-    b: number;
-    a: number;
-}
-
-interface PixelUpdate {
-    position: Point2D;
-    colorIndex: number;
+/**
+ * Canvas-related code
+ */
+interface CanvasParameters {
+    onPixelUpdatesSubmitted: (updates: PixelUpdate[]) => void; // called when pixel updates submitted by user
 }
 
 class Canvas {
-    private static readonly BOARD_WIDTH_PX = 1000;
-    private static readonly BOARD_HEIGHT_PX = 1000;
+    public static readonly BOARD_WIDTH_PX = 1000;
+    public static readonly BOARD_HEIGHT_PX = 1000;
 
     // 16 colors according to this: http://www.december.com/html/spec/color16codes.html
     private static readonly COLOR_PALETTE_16: CanvasColor[] = [
@@ -45,15 +35,19 @@ class Canvas {
     private currentPositionStr: KnockoutObservable<string>;
     private availableColors: KnockoutObservableArray<CanvasColor>;
     private selectedColorIndex: KnockoutObservable<number>;
+    private params: CanvasParameters;
 
     // state
     private isFreehandEnabled = true;
+    private pendingDrawnUpdates: PixelUpdate[] = [];
     private isMouseDown: boolean = false;
-    private pendingUpdates: PixelUpdate[] = [];
     private boardState: Uint8ClampedArray;
 
-    public constructor() {
-        // initialize our canvas
+    // private queuedUpdate: PixelUpdate[] = [];
+
+    public constructor(params: CanvasParameters) {
+        this.params = params;
+
         this.canvas = <HTMLCanvasElement>document.getElementById('canvas');
         this.context = this.canvas.getContext('2d');
         this.context.imageSmoothingEnabled = false;
@@ -91,6 +85,7 @@ class Canvas {
         this.selectedColorIndex = ko.observable(0);
 
         this.boardState = new Uint8ClampedArray(Canvas.BOARD_WIDTH_PX * Canvas.BOARD_HEIGHT_PX * 4);
+
         // TODO REMOVE THIS
         this.loadDummyImage();
     }
@@ -182,8 +177,8 @@ class Canvas {
             this.paintPixel(position, this.selectedColorIndex());
 
             // don't dupe last updates
-            if (this.pendingUpdates.length > 0) {
-                const lastUpdate = this.pendingUpdates[this.pendingUpdates.length - 1];
+            if (this.pendingDrawnUpdates.length > 0) {
+                const lastUpdate = this.pendingDrawnUpdates[this.pendingDrawnUpdates.length - 1];
                 if (position.x === lastUpdate.position.x && position.y === lastUpdate.position.y &&
                     this.selectedColorIndex() === lastUpdate.colorIndex) {
                         // console.log('skipping redundant update');
@@ -191,8 +186,8 @@ class Canvas {
                     }
             }
 
-            if (this.pendingUpdates)
-            this.pendingUpdates.push({
+            if (this.pendingDrawnUpdates)
+            this.pendingDrawnUpdates.push({
                 position: position,
                 colorIndex: this.selectedColorIndex()
             });
@@ -205,7 +200,7 @@ class Canvas {
 
         const position = this.getCanvasCoordinates(e.clientX, e.clientY);
         this.paintPixel(position, this.selectedColorIndex());
-        this.pendingUpdates = [{
+        this.pendingDrawnUpdates = [{
             position: position,
             colorIndex: this.selectedColorIndex()
         }];
@@ -217,8 +212,8 @@ class Canvas {
     }
 
     private flushUpdates() {
-        this.submitPixelUpdates(this.pendingUpdates);
-        this.pendingUpdates = [];
+        this.params.onPixelUpdatesSubmitted(this.pendingDrawnUpdates);
+        this.pendingDrawnUpdates = [];
     }
 
     private paintPixel(position: Point2D, colorIndex: number) {
@@ -233,7 +228,7 @@ class Canvas {
     }
 
     /**
-     * TODO For some reason, clicking close to the lower edge of a pixel draws on next pixel below
+     * Convert mouse x,y to canvas x,y
      * @param x
      * @param y
      */
@@ -246,46 +241,8 @@ class Canvas {
         }
     }
 
-    private static convertBoard(image: ArrayBuffer) {
-
-    }
-
-    private fetchInitialBoard() {
-        $.get("/api/build-demo/board",
-            (data: any, status: number) => {
-                alert("Data: " + data + "\nStatus: " + status);
-                Canvas.convertBoard(data.image);
-
-
-            });
-    }
-
-    private submitPixelUpdates(updates: PixelUpdate[]) {
-        console.log('Submit updates', updates);
-        return;
-        // $.post("/Item/Create",
-        //     {
-        //         X: position.x,
-        //         Y: position.y,
-        //         Color: color,
-        //         UserAgent: navigator.userAgent
-        //     },
-        //     function (data: any, status: number) {
-        //         alert("Data: " + data + "\nStatus: " + status);
-        //     });
-    }
-
-    public shutdown() {
-
+    public queuePixelUpdate(data: PixelUpdate) {
+        // for now, just draw it!
+        this.paintPixel(data.position, data.colorIndex);
     }
 }
-
-let canvas: Canvas;
-$(document).ready(function () {
-    canvas = new Canvas();
-    ko.applyBindings(canvas);
-
-});
-// $(window).unload(function () {
-//     canvas.shutdown();
-// });
