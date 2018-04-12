@@ -25,7 +25,7 @@ namespace pxdraw.api
         /// Returns
         /// Status Codes:
         /// - 200 if the request was a success.
-        /// - 5xx iindicates the service is unhealthy.
+        /// - 5xx indicates the service is unhealthy.
         /// Content-type: application/json; utf8
         /// Body:
         /// {
@@ -43,14 +43,28 @@ namespace pxdraw.api
         [FunctionName("metadata")]
         public static async Task<HttpResponseMessage> Metadata([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)]HttpRequestMessage req, ILogger log, ExecutionContext context)
         {
-            var metadata = new Metadata{
-                GetBoardEndpoint = "",
-                LoginEndpoint = "",
-                UpdatePixelEndpoint = "",
-                WebsocketEndpoint = "",
-            };
+            try
+            {
+                string getBoardEndpoint = Environment.GetEnvironmentVariable("PXDRAW_GETBOARD_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_GETBOARD_ENDPOINT environment variable does not exist.");
+                string loginEndpoint = Environment.GetEnvironmentVariable("PXDRAW_LOGIN_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_LOGIN_ENDPOINT environment variable does not exist.");
+                string updatePixelEndpoint = Environment.GetEnvironmentVariable("PXDRAW_UPDATEPIXEL_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_UPDATEPIXEL_ENDPOINT environment variable does not exist.");
+                string websocketEndpoint = Environment.GetEnvironmentVariable("PXDRAW_WEBSOCKET_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_WEBSOCKET_ENDPOINT environment variable does not exist.");
 
-            return req.CreateResponse(HttpStatusCode.OK, metadata); ;
+                var metadata = new Metadata
+                {
+                    GetBoardEndpoint = getBoardEndpoint,
+                    LoginEndpoint = loginEndpoint,
+                    UpdatePixelEndpoint = updatePixelEndpoint,
+                    WebsocketEndpoint = websocketEndpoint,
+                };
+
+                return req.CreateResponse(HttpStatusCode.OK, metadata);
+            }
+            catch (Exception err)
+            {
+                log.LogError(err);
+                return req.CreateErrorResponse(HttpStatusCode.InternalServerError, $"Could not complete the request. Reference {context.InvocationId} for details.");
+            }
         }
 
         /// <summary>
