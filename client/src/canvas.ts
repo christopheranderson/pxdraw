@@ -218,6 +218,10 @@ class Canvas {
 
     private paintPixel(position: Point2D, colorIndex: number) {
         const color = this.availableColors()[colorIndex];
+        if (!color) {
+            console.error('Unknown colorIndex', colorIndex);
+            return;
+        }
         const imgData = this.context.createImageData(1,1);
         const d = imgData.data;
         d[0] = color.r;

@@ -5,7 +5,8 @@
     "dependencies": {
         "jquery": "3.3.1",
         "knockout": "3.4.2",
-        "jquery.panzoom": "3.2.2"
+        "jquery.panzoom": "3.2.2",
+        "jquery.mousewheel": "3.1.9"
     },
     "devDependencies": {
         "@types/jquery": "3.3.1",

@@ -19,9 +19,9 @@
     }
 
     private generateRandomUpdate() {
-        const x = Math.round(Math.random() * 100);
-        const y = Math.round(Math.random() * 100);
-        const color = Math.round(Math.random() * 16);
+        const x = Math.floor(Math.random() * 100);
+        const y = Math.floor(Math.random() * 100);
+        const color = Math.floor(Math.random() * 16);
         const update:OnPixelUpdateData = {
             update: {
                 position: { x: x, y: y },
