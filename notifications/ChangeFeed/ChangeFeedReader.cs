@@ -92,7 +92,7 @@ namespace PxDRAW.SignalR.ChangeFeed
                         {
                             DocumentClientException dcex = (DocumentClientException)exceptionDispatchInfo.SourceException;
 
-                            if ((HttpStatusCode)dcex.StatusCode == HttpStatusCode.NotFound && (SubStatusCode)this.GetSubStatusCode(dcex) != SubStatusCode.ReadSessionNotAvailable)
+                            if ((HttpStatusCode)dcex.StatusCode == HttpStatusCode.NotFound && (SubStatusCode)ChangeFeedReader.GetSubStatusCode(dcex) != SubStatusCode.ReadSessionNotAvailable)
                             {
                                  // Most likely, the database or collection was removed while we were enumerating.
                                 this.telemetryClient.TrackException(dcex);
@@ -101,7 +101,7 @@ namespace PxDRAW.SignalR.ChangeFeed
                             }
                             else if ((HttpStatusCode)dcex.StatusCode == HttpStatusCode.Gone)
                             {
-                                SubStatusCode subStatusCode = (SubStatusCode)this.GetSubStatusCode(dcex);
+                                SubStatusCode subStatusCode = (SubStatusCode)ChangeFeedReader.GetSubStatusCode(dcex);
                                 this.telemetryClient.TrackException(dcex);
                             }
                             else if ((HttpStatusCode)dcex.StatusCode == HttpStatusCode.TooManyRequests ||
@@ -172,7 +172,7 @@ namespace PxDRAW.SignalR.ChangeFeed
 
             if (cosmosDbConfiguration.Endpoint.Contains("localhost"))
             {
-                // Emulator does not support Direct/TCP
+                // Emulator does not support PreferredLocations
                 return connectionPolicy;
             }
 
@@ -189,7 +189,7 @@ namespace PxDRAW.SignalR.ChangeFeed
             return configuration.GetSection("ApplicationInsights")?.GetValue<string>("InstrumentationKey", string.Empty) ?? string.Empty;
         }
 
-        private int GetSubStatusCode(DocumentClientException exception)
+        private static int GetSubStatusCode(DocumentClientException exception)
         {
             const string SubStatusHeaderName = "x-ms-substatus";
             string valueSubStatus = exception.ResponseHeaders.Get(SubStatusHeaderName);
