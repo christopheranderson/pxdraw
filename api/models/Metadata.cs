@@ -15,7 +15,7 @@ namespace pxdraw.api.models
         public string GetBoardEndpoint { get; set; }
         [JsonProperty("updatePixelEndpoint", NullValueHandling = NullValueHandling.Include)]
         public string UpdatePixelEndpoint { get; set; }
-        [JsonProperty("websocketEndPoint", NullValueHandling = NullValueHandling.Include)]
+        [JsonProperty("websocketEndpoint", NullValueHandling = NullValueHandling.Include)]
         public string WebsocketEndpoint { get; set; }
     }
 }

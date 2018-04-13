@@ -8,6 +8,7 @@ namespace PxDRAW.SignalR.ChangeFeed
     using System.Globalization;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -104,7 +105,7 @@ namespace PxDRAW.SignalR.ChangeFeed
                                 SubStatusCode subStatusCode = (SubStatusCode)ChangeFeedReader.GetSubStatusCode(dcex);
                                 this.telemetryClient.TrackException(dcex);
                             }
-                            else if ((HttpStatusCode)dcex.StatusCode == HttpStatusCode.TooManyRequests ||
+                            else if ((int)dcex.StatusCode == 429 ||
                                  (HttpStatusCode)dcex.StatusCode == HttpStatusCode.ServiceUnavailable)
                             {
                                 this.telemetryClient.TrackEvent($"Retriable exception: {dcex.Message}");

@@ -13,7 +13,7 @@
 
  class UpdateClient {
     private params: UpdateClientParameters;
-    private connection:any; // TODO Add types here
+    private connection: signalR.HubConnection; // TODO Add types here
 
     constructor(params: UpdateClientParameters) {
         this.params = params;
@@ -25,7 +25,10 @@
      */
     public init(url: string): JQueryPromise<any> {
         // this.connection = new signalR.HubConnection('https://signalr21.azurewebsites.net/hubs/notifications');
-        this.connection = new signalR.HubConnection(url);
+        const options: signalR.IHubConnectionOptions = {
+            logger: new signalR.ConsoleLogger(signalR.LogLevel.Trace)
+        }
+        this.connection = new signalR.HubConnection(url, options);
         this.connection.on('Changes', (data:any) => {
             // TODO Error checking here
             if (!data) {
@@ -39,9 +42,12 @@
                 return;
             }
 
-            this.params.onReceived(docs[0])
+            for(const doc of docs)
+            {
+                this.params.onReceived(doc);
+            }
         });
-        return this.connection.start();
+        return <any>this.connection.start();
 
         // TODO generate fake updates for now
         // setInterval(this.generateRandomUpdate.bind(this), 1);
