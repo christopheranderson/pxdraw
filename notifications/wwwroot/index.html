@@ -19,7 +19,7 @@
             messagesList.appendChild(li);
         }
 
-        var connection = new signalR.HubConnection("/hubs/chat");
+        var connection = new signalR.HubConnection("/hubs/notifications");
 
         connection.on("Changes", function (data) {
             appendMessage(data);

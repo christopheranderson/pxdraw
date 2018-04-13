@@ -34,6 +34,7 @@ namespace PxDRAW.SignalR
                 options.AddPolicy(
                     "CorsPolicy",
                     builder => builder
+                    .AllowCredentials()
                     .AllowAnyOrigin()
                     .AllowAnyMethod()
                     .AllowAnyHeader());
@@ -46,13 +47,12 @@ namespace PxDRAW.SignalR
         public void Configure(IApplicationBuilder app)
         {
             app.UseDeveloperExceptionPage();
-
+            app.UseCors("CorsPolicy");
             app.UseDefaultFiles();
             app.UseStaticFiles();
-            app.UseCors();
             app.UseSignalR(routes =>
             {
-                routes.MapHub<ClientHub>("/hubs/chat");
+                routes.MapHub<ClientHub>("/hubs/notifications");
             });
         }
     }
