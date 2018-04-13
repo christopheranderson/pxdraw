@@ -60,7 +60,7 @@ namespace PxDRAW.SignalR.ChangeFeed
             TimeSpan feedPollDelay = TimeSpan.FromSeconds(this.cosmosDbConfiguration.PollingInterval.HasValue ? this.cosmosDbConfiguration.PollingInterval.Value : 5);
             return Task.Run(async () =>
             {
-                this.telemetryClient.TrackEvent($"Task running.");
+                this.telemetryClient.TrackEvent($"ChangeFeedReader running.");
                 ChangeFeedOptions options = new ChangeFeedOptions
                 {
                     MaxItemCount = -1,
@@ -146,15 +146,13 @@ namespace PxDRAW.SignalR.ChangeFeed
                         }
                     }
                     while (query.HasMoreResults && this.isRunning);
-
-                    this.telemetryClient.TrackEvent($"Loop {this.isRunning}.");
                 }
             });
         }
 
         public Task StopAsync(CancellationToken cancellation)
         {
-            this.telemetryClient.TrackEvent($"Task end.");
+            this.telemetryClient.TrackEvent($"ChangeFeedReader shutting down.");
             this.isRunning = false;
             return Task.CompletedTask;
         }
