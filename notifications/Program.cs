@@ -26,7 +26,6 @@ namespace PxDRAW.SignalR
                         .AddEnvironmentVariables();
                 })
                 .UseAzureAppServices()
-                .UseApplicationInsights()
                 .UseStartup<Startup>()
                 .Build();
     }

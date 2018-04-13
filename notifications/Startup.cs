@@ -4,42 +4,38 @@
 
 namespace PxDRAW.SignalR
 {
-    using System;
     using Microsoft.ApplicationInsights;
     using Microsoft.AspNetCore.Builder;
-    using Microsoft.AspNetCore.Hosting;
-    using Microsoft.AspNetCore.SignalR;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Hosting;
     using PxDRAW.SignalR.ChangeFeed;
     using PxDRAW.SignalR.Hubs;
-    using PxDRAW.SignalR.Models;
 
     internal class Startup
     {
-        public Startup(IConfiguration configuration, TelemetryClient telemetryClient, IHostingEnvironment env, IServiceProvider serviceProvider)
+        public Startup(IConfiguration configuration)
         {
             this.Configuration = configuration;
-            this.InsightsClient = telemetryClient;
         }
 
         public IConfiguration Configuration { get; }
 
-        public TelemetryClient InsightsClient { get; }
-
         public void ConfigureServices(IServiceCollection services)
         {
+            var aiOptions = new Microsoft.ApplicationInsights.AspNetCore.Extensions.ApplicationInsightsServiceOptions
+            {
+                EnableAdaptiveSampling = false,
+            };
+            services.AddApplicationInsightsTelemetry(aiOptions);
             services.AddSignalR();
-            services.AddSingleton<IChangeFeedReader>(new ChangeFeedReader(this.InsightsClient, this.BuildConfigurationForSection("CosmosDB")));
+            services.AddSingleton<IHostedService, ChangeFeedReader>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime applicationLifetime, IHubContext<ClientHub> signalRHubContext, IChangeFeedReader changeFeedReader)
+        public void Configure(IApplicationBuilder app)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
+            app.UseDeveloperExceptionPage();
 
             app.UseDefaultFiles();
             app.UseStaticFiles();
@@ -47,16 +43,6 @@ namespace PxDRAW.SignalR
             {
                 routes.MapHub<ClientHub>("/hubs/chat");
             });
-
-            changeFeedReader.RegisterHub(signalRHubContext);
-            changeFeedReader.Start();
-        }
-
-        private CosmosDbConfiguration BuildConfigurationForSection(string sectionName)
-        {
-            CosmosDbConfiguration cosmosDbConfiguration = new CosmosDbConfiguration();
-            this.Configuration.GetSection(sectionName).Bind(cosmosDbConfiguration);
-            return cosmosDbConfiguration;
         }
     }
 }

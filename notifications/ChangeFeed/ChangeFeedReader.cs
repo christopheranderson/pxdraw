@@ -5,8 +5,6 @@
 namespace PxDRAW.SignalR.ChangeFeed
 {
     using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
     using System.Runtime.ExceptionServices;
@@ -17,11 +15,13 @@ namespace PxDRAW.SignalR.ChangeFeed
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Linq;
+    using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.Hosting;
     using Newtonsoft.Json;
     using PxDRAW.SignalR.Hubs;
     using PxDRAW.SignalR.Models;
 
-    internal class ChangeFeedReader : IChangeFeedReader
+    internal class ChangeFeedReader : IHostedService
     {
         private const int DefaultMaxItemCount = 100;
         private readonly TelemetryClient telemetryClient;
@@ -31,24 +31,21 @@ namespace PxDRAW.SignalR.ChangeFeed
         private DocumentClient documentClient;
         private Uri collectionLink;
 
-        public ChangeFeedReader(TelemetryClient telemetryClient, CosmosDbConfiguration cosmosDbConfiguration)
+        public ChangeFeedReader(TelemetryClient telemetryClient, IConfiguration configuration, IHubContext<ClientHub> signalRHubContext)
         {
+            var cosmosDbConfiguration = ChangeFeedReader.BuildConfigurationForSection(configuration, "CosmosDB");
             this.telemetryClient = telemetryClient;
             this.cosmosDbConfiguration = cosmosDbConfiguration;
+            this.signalRHubContext = signalRHubContext;
             this.telemetryClient.TrackEvent($"Detected configuration for PxDRAW collection: {cosmosDbConfiguration.ToString()}");
         }
 
-        public void RegisterHub(IHubContext<ClientHub> signalRHubContext)
-        {
-            this.signalRHubContext = signalRHubContext;
-        }
-
-        public void Start()
+        public Task StartAsync(CancellationToken cancellation)
         {
             // TODO: read latest LSN from Blob
             if (this.isRunning)
             {
-                return;
+                return Task.CompletedTask;
             }
 
             if (this.documentClient == null)
@@ -61,9 +58,9 @@ namespace PxDRAW.SignalR.ChangeFeed
 
             this.isRunning = true;
             TimeSpan feedPollDelay = TimeSpan.FromSeconds(this.cosmosDbConfiguration.PollingInterval.HasValue ? this.cosmosDbConfiguration.PollingInterval.Value : 5);
-            CancellationTokenSource cancellation = new CancellationTokenSource();
-            Task workerTask = Task.Run(async () =>
+            return Task.Run(async () =>
             {
+                this.telemetryClient.TrackEvent($"Task running.");
                 ChangeFeedOptions options = new ChangeFeedOptions
                 {
                     MaxItemCount = -1,
@@ -95,7 +92,7 @@ namespace PxDRAW.SignalR.ChangeFeed
 
                             if ((StatusCode)dcex.StatusCode == StatusCode.NotFound && (SubStatusCode)this.GetSubStatusCode(dcex) != SubStatusCode.ReadSessionNotAvailable)
                             {
-                                // Most likely, the database or collection was removed while we were enumerating.
+                                 // Most likely, the database or collection was removed while we were enumerating.
                                 this.telemetryClient.TrackException(dcex);
                                 this.isRunning = false;
                                 break;
@@ -106,14 +103,14 @@ namespace PxDRAW.SignalR.ChangeFeed
                                 this.telemetryClient.TrackException(dcex);
                             }
                             else if ((StatusCode)dcex.StatusCode == StatusCode.TooManyRequests ||
-                                (StatusCode)dcex.StatusCode == StatusCode.ServiceUnavailable)
+                                 (StatusCode)dcex.StatusCode == StatusCode.ServiceUnavailable)
                             {
                                 this.telemetryClient.TrackEvent($"Retriable exception: {dcex.Message}");
                             }
                             else if (dcex.Message.Contains("Reduce page size and try again."))
                             {
-                                // Temporary workaround to compare exception message, until server provides better way of handling this case.
-                                if (!options.MaxItemCount.HasValue)
+                                 // Temporary workaround to compare exception message, until server provides better way of handling this case.
+                                 if (!options.MaxItemCount.HasValue)
                                 {
                                     options.MaxItemCount = DefaultMaxItemCount;
                                 }
@@ -123,15 +120,15 @@ namespace PxDRAW.SignalR.ChangeFeed
                                     exceptionDispatchInfo.Throw();
                                 }
 
-                                options.MaxItemCount /= 2;
-                                this.telemetryClient.TrackEvent($"Reducing maxItemCount, new value: {options.MaxItemCount}.");
+                                 options.MaxItemCount /= 2;
+                                 this.telemetryClient.TrackEvent($"Reducing maxItemCount, new value: {options.MaxItemCount}.");
                             }
                             else
                             {
                                 this.telemetryClient.TrackException(dcex);
                             }
 
-                            await Task.Delay(dcex.RetryAfter != TimeSpan.Zero ? dcex.RetryAfter : feedPollDelay, cancellation.Token);
+                            await Task.Delay(dcex.RetryAfter != TimeSpan.Zero ? dcex.RetryAfter : feedPollDelay, cancellation);
                         }
 
                         if (readChangesResponse != null)
@@ -144,18 +141,29 @@ namespace PxDRAW.SignalR.ChangeFeed
                             }
                             else
                             {
-                                await Task.Delay(feedPollDelay, cancellation.Token);
+                                await Task.Delay(feedPollDelay, cancellation);
                             }
                         }
                     }
                     while (query.HasMoreResults && this.isRunning);
+
+                    this.telemetryClient.TrackEvent($"Loop {this.isRunning}.");
                 }
             });
         }
 
-        public void Stop()
+        public Task StopAsync(CancellationToken cancellation)
         {
+            this.telemetryClient.TrackEvent($"Task end.");
             this.isRunning = false;
+            return Task.CompletedTask;
+        }
+
+        private static CosmosDbConfiguration BuildConfigurationForSection(IConfiguration configuration, string sectionName)
+        {
+            CosmosDbConfiguration cosmosDbConfiguration = new CosmosDbConfiguration();
+            configuration.GetSection(sectionName).Bind(cosmosDbConfiguration);
+            return cosmosDbConfiguration;
         }
 
         private static ConnectionPolicy BuildConnectionPolicy(CosmosDbConfiguration cosmosDbConfiguration)
