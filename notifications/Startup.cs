@@ -6,6 +6,7 @@ namespace PxDRAW.SignalR
 {
     using Microsoft.ApplicationInsights;
     using Microsoft.AspNetCore.Builder;
+    using Microsoft.AspNetCore.Http.Connections;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
@@ -28,6 +29,15 @@ namespace PxDRAW.SignalR
                 EnableAdaptiveSampling = false,
             };
             services.AddApplicationInsightsTelemetry(aiOptions);
+            services.AddCors(options =>
+            {
+                options.AddPolicy(
+                    "CorsPolicy",
+                    builder => builder
+                    .AllowAnyOrigin()
+                    .AllowAnyMethod()
+                    .AllowAnyHeader());
+            });
             services.AddSignalR();
             services.AddSingleton<IHostedService, ChangeFeedReader>();
         }
@@ -39,6 +49,7 @@ namespace PxDRAW.SignalR
 
             app.UseDefaultFiles();
             app.UseStaticFiles();
+            app.UseCors();
             app.UseSignalR(routes =>
             {
                 routes.MapHub<ClientHub>("/hubs/chat");

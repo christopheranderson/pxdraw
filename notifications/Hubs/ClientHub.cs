@@ -19,7 +19,6 @@ namespace PxDRAW.SignalR.Hubs
         /// <returns>A Task</returns>
         public override async Task OnConnectedAsync()
         {
-            await this.Clients.All.SendAsync("SendAction", "client", "joined");
         }
 
         /// <summary>
@@ -29,17 +28,6 @@ namespace PxDRAW.SignalR.Hubs
         /// <returns>A Task</returns>
         public override async Task OnDisconnectedAsync(Exception ex)
         {
-            await this.Clients.All.SendAsync("SendAction", "client", "left");
-        }
-
-        /// <summary>
-        /// Handler of Send event.
-        /// </summary>
-        /// <param name="message">A Message</param>
-        /// <returns>A Task</returns>
-        public async Task Send(string message)
-        {
-            await this.Clients.All.SendAsync("SendMessage", "client", message);
         }
     }
 }
