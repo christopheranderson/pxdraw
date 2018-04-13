@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+</head>
+<body>
+    <h1>Change Feed log</h1>
+    <ul id="messages-list"></ul>
+
+    <script src="/lib/signalr/signalr.js"></script>
+    <script type="text/javascript">
+        // Bind DOM elements
+        var messagesList = document.getElementById("messages-list");
+
+        function appendMessage(content) {
+            var li = document.createElement("li");
+            li.innerText = content;
+            messagesList.appendChild(li);
+        }
+
+        var connection = new signalR.HubConnection("/hubs/notifications");
+
+        connection.on("Changes", function (data) {
+            appendMessage(data);
+        });
+
+        connection.start().then(function() {
+            appendMessage("SignalR client connected.");
+        });
+    </script>
+</body>
+</html>
