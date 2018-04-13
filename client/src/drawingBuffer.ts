@@ -2,7 +2,7 @@
  * Utility class that allows drawing arbitrary shapes and produces a set of de-duped pixel updates
  */
 class DrawingBuffer {
-    private static readonly FREEHAND_PEN_SIZE_PX = 1; // Freehand drawing uses thicker pen
+    private static readonly FREEHAND_PEN_SIZE_PX = 2; // Freehand drawing uses thicker pen
 
     private isFreehand: boolean;
     private isPenDown: boolean = false;
