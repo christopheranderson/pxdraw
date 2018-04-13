@@ -11,7 +11,13 @@ This service acts as a notification layer, creating a SignalR host and a IHosted
 
 Create a collection named `pixels` within a `pxdraw` database. All inserts/updates happening in that collection will be notified.
 
-To configure a different collection, please see [appsettions.Development.json](./appsettions.Development.json).
+To configure a different collection, please see [appsettings.Development.json](./appsettings.Development.json).
+
+* CosmosDB > DatabaseName: Name of the database where changes will occur.
+* CosmosDB > CollectionName: Name of the database where changes will occur.
+* CosmosDB > PreferredLocations: Comma separated list of [PreferredLocations](https://docs.microsoft.com/dotnet/api/microsoft.azure.documents.client.connectionpolicy.preferredlocations?view=azure-dotnet).
+* CosmosDB > Endpoint: Cosmos DB Account endpoint.
+* CosmosDB > MasterKey: Cosmos DB Account master key.
 
 ## Deploy instructions
 
