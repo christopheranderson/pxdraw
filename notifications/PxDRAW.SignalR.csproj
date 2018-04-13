@@ -23,6 +23,7 @@
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.1.0-preview2-final" />
     <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.1.0-preview2-final" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.0.0-preview2-final" />
+    <PackageReference Include="Microsoft.AspNetCore.WebSockets" Version="2.1.0-preview2-final" />
     <PackageReference Include="Microsoft.Azure.DocumentDB.Core" Version="1.9.1" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.0-beta004" PrivateAssets="All" />
   </ItemGroup>

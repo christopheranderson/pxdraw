@@ -50,6 +50,7 @@ namespace PxDRAW.SignalR
             app.UseCors("CorsPolicy");
             app.UseDefaultFiles();
             app.UseStaticFiles();
+            app.UseWebSockets();
             app.UseSignalR(routes =>
             {
                 routes.MapHub<ClientHub>("/hubs/notifications");
