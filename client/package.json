@@ -11,10 +11,12 @@
     "devDependencies": {
         "@types/jquery": "3.3.1",
         "@types/knockout": "3.4.53",
-        "lite-server": "^2.3.0"
+        "lite-server": "^2.3.0",
+        "typescript": "^2.8.1"
     },
     "scripts": {
         "dev": "lite-server",
+        "start": "npm run dev",
         "build": "tsc -p src",
         "clean": "rmdir /q /s built >nul 2>&1"
     }
