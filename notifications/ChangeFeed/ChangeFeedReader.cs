@@ -31,13 +31,15 @@ namespace PxDRAW.SignalR.ChangeFeed
         private DocumentClient documentClient;
         private Uri collectionLink;
 
-        public ChangeFeedReader(TelemetryClient telemetryClient, IConfiguration configuration, IHubContext<ClientHub> signalRHubContext)
+        public ChangeFeedReader(IConfiguration configuration, IHubContext<ClientHub> signalRHubContext)
         {
             var cosmosDbConfiguration = ChangeFeedReader.BuildConfigurationForSection(configuration, "CosmosDB");
-            this.telemetryClient = telemetryClient;
             this.cosmosDbConfiguration = cosmosDbConfiguration;
             this.signalRHubContext = signalRHubContext;
-            this.telemetryClient.TrackEvent($"Detected configuration for PxDRAW collection: {cosmosDbConfiguration.ToString()}");
+            this.telemetryClient = new TelemetryClient(new Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration()
+            {
+                InstrumentationKey = ChangeFeedReader.DetectAppInsightsInstrumentationKey(configuration),
+            });
         }
 
         public Task StartAsync(CancellationToken cancellation)
@@ -64,7 +66,6 @@ namespace PxDRAW.SignalR.ChangeFeed
                 ChangeFeedOptions options = new ChangeFeedOptions
                 {
                     MaxItemCount = -1,
-                    StartFromBeginning = true,
                     PartitionKeyRangeId = "0",
                 };
 
@@ -134,9 +135,9 @@ namespace PxDRAW.SignalR.ChangeFeed
                         if (readChangesResponse != null)
                         {
                             var results = readChangesResponse.ToList();
-                            this.telemetryClient.TrackTrace($"Detected {results.Count} documents.");
                             if (results.Count > 0)
                             {
+                                this.telemetryClient.TrackTrace($"Detected {results.Count} documents.");
                                 await this.signalRHubContext.Clients.All.SendAsync("Changes", JsonConvert.SerializeObject(results));
                             }
                             else
@@ -180,6 +181,11 @@ namespace PxDRAW.SignalR.ChangeFeed
             }
 
             return connectionPolicy;
+        }
+
+        private static string DetectAppInsightsInstrumentationKey(IConfiguration configuration)
+        {
+            return configuration.GetSection("ApplicationInsights")?.GetValue<string>("InstrumentationKey", string.Empty) ?? string.Empty;
         }
 
         private int GetSubStatusCode(DocumentClientException exception)
