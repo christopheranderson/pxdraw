@@ -22,7 +22,7 @@
      * @param url
      */
     public init(url: string): JQueryPromise<any> {
-        this.connection = $.connection(url || 'blah');
+        this.connection = $.connection(url);
         this.connection.received(this.params.onConnected);
         return this.connection.start();
 
