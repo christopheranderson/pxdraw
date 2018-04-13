@@ -18,9 +18,8 @@ interface CanvasColor {
     a: number;
 }
 
-interface PixelUpdate {
-    position: Point2D;
-    colorIndex: number;
+interface PixelUpdate extends Point2D {
+    color: number;
 }
 
 interface FetchBoardResponseData {
@@ -28,9 +27,8 @@ interface FetchBoardResponseData {
     LSN: number; // corresponding LSN
 }
 
-interface OnPixelUpdateData {
-    update: PixelUpdate;
-    LSN: number;
+interface OnPixelUpdateData extends PixelUpdate {
+    _lsn: number;
 }
 
 interface FetchMetadataResponseData {
@@ -77,7 +75,7 @@ class Main {
 
     private onPixelUpdateFromRemote(data: OnPixelUpdateData) {
         this.receivedUpdates.push(data);
-        this.canvas.queuePixelUpdate(data.update);
+        this.canvas.queuePixelUpdate(data);
     }
 
     /**
@@ -162,9 +160,9 @@ class Main {
     private submitPixelUpdates(updates: PixelUpdate[]) {
         const data = updates.map((update: PixelUpdate) => {
             return {
-                x: update.position.x,
-                y: update.position.y,
-                color: update.colorIndex
+                x: update.x,
+                y: update.y,
+                color: update.color
             }
         });
 
