@@ -219,9 +219,9 @@ class Canvas {
     }
 
     private paintToCanvas(update: PixelUpdate) {
-        const color = this.availableColors()[update.colorIndex];
+        const color = this.availableColors()[update.color];
         if (!color) {
-            console.error('Unknown colorIndex', update.colorIndex);
+            console.error('Unknown color', update.color);
             return;
         }
         const imgData = this.context.createImageData(1,1);
@@ -270,9 +270,9 @@ class Canvas {
         return dataView.getUint32(0);
     }
 
-    private paintToBuffer(position: Point2D, colorIndex: number) {
+    private paintToBuffer(position: Point2D, color: number) {
         const i = Canvas.coordinates2BufferIndex(position);
-        this.writeBuffer[i] = this.colorIndex2ABGR(colorIndex);
+        this.writeBuffer[i] = this.colorIndex2ABGR(color);
     }
 
     private static coordinates2BufferIndex(position: Point2D): number {
@@ -284,9 +284,9 @@ class Canvas {
         let x = 0;
         let y = 0;
         for (let i = 0; i<board.byteLength; i++) {
-            const colorIndex = board[i];
-            // this.paintPixel({ x:x, y:y }, colorIndex);
-            this.paintToBuffer({ x:x, y:y }, colorIndex);
+            const color = board[i];
+            // this.paintPixel({ x:x, y:y }, color);
+            this.paintToBuffer({ x:x, y:y }, color);
 
             if (++x >= Canvas.BOARD_WIDTH_PX) {
                 x = 0;

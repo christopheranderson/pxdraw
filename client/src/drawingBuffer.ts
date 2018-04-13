@@ -19,14 +19,14 @@ class DrawingBuffer {
     /**
      * Move pen down
      * @param position
-     * @param colorIndex
+     * @param color
      * @return individual pixel updates for this operation
      */
-    public penDown(position: Point2D, colorIndex: number): PixelUpdate[] {
+    public penDown(position: Point2D, color: number): PixelUpdate[] {
         this.isPenDown = true;
         this.lastPosition = position;
 
-        const updates = this.drawSpot(position, colorIndex);
+        const updates = this.drawSpot(position, color);
         this.updateAggregator.addUpdates(updates);
         return updates;
     }
@@ -34,17 +34,17 @@ class DrawingBuffer {
     /**
      * Move pen
      * @param position
-     * @param colorIndex
+     * @param color
      * @return individual pixel updates for this operation
      */
-    public penMove(position: Point2D, colorIndex: number): PixelUpdate[] {
+    public penMove(position: Point2D, color: number): PixelUpdate[] {
         if (!this.isPenDown || !this.isFreehand) {
             return [];
         }
 
         // Draw spot
         const updateAgg = new PixelUpdateAggregator();
-        const updates = this.drawSpot(position, colorIndex);
+        const updates = this.drawSpot(position, color);
         updateAgg.addUpdates(updates);
 
         // Interpolate from last position
@@ -56,7 +56,7 @@ class DrawingBuffer {
                 const xi = this.lastPosition.x + Math.round(i * deltaX / incr);
                 const yi = this.lastPosition.y + Math.round(i * deltaY / incr);
 
-                const updatesi = this.drawSpot({ x: xi, y: yi }, colorIndex);
+                const updatesi = this.drawSpot({ x: xi, y: yi }, color);
                 updateAgg.addUpdates(updatesi);
             }
         }
@@ -79,15 +79,15 @@ class DrawingBuffer {
     /**
      * Draw single point: for freehand, draw neighboring points
      * @param position
-     * @param colorIndex
+     * @param color
      */
-    public drawSpot(position: Point2D, colorIndex: number): PixelUpdate[] {
+    public drawSpot(position: Point2D, color: number): PixelUpdate[] {
         const updates: PixelUpdate[] = [];
         if (!this.isFreehand) {
             updates.push({
                 x: position.x,
                 y: position.y,
-                colorIndex: colorIndex
+                color: color
             });
         } else {
             for (let x = position.x - DrawingBuffer.FREEHAND_PEN_SIZE_PX; x < position.x + DrawingBuffer.FREEHAND_PEN_SIZE_PX + 1; x++) {
@@ -95,7 +95,7 @@ class DrawingBuffer {
                     updates.push({
                         x: x,
                         y: y,
-                        colorIndex: colorIndex
+                        color: color
                     });
                 }
             }

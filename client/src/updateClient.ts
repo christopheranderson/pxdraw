@@ -24,6 +24,7 @@
      * @param url
      */
     public init(url: string): JQueryPromise<any> {
+        // this.connection = new signalR.HubConnection('https://signalr21.azurewebsites.net/hubs/notifications');
         this.connection = new signalR.HubConnection(url);
         this.connection.on('Changes', (data:any) => {
             // TODO Error checking here
@@ -32,9 +33,13 @@
             }
 
             // TODO handle parse issue
-            const update: OnPixelUpdateData = JSON.parse(data);
+            const docs: OnPixelUpdateData[] = JSON.parse(data);
+            if (docs.length < 1) {
+                console.error('No valid update');
+                return;
+            }
 
-            this.params.onReceived(update)
+            this.params.onReceived(docs[0])
         });
         return this.connection.start();
 
@@ -47,12 +52,10 @@
         const y = Math.floor(Math.random() * 100) + 450;
         const color = Math.floor(Math.random() * 16);
         const update:OnPixelUpdateData = {
-            update: {
-                x: x,
-                y: y,
-                colorIndex: color
-            },
-            LSN: 0
+            x: x,
+            y: y,
+            color: color,
+            _lsn: 0
         }
         this.params.onReceived(update);
     }

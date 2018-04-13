@@ -19,7 +19,7 @@ interface CanvasColor {
 }
 
 interface PixelUpdate extends Point2D {
-    colorIndex: number;
+    color: number;
 }
 
 interface FetchBoardResponseData {
@@ -27,9 +27,8 @@ interface FetchBoardResponseData {
     LSN: number; // corresponding LSN
 }
 
-interface OnPixelUpdateData {
-    update: PixelUpdate;
-    LSN: number;
+interface OnPixelUpdateData extends PixelUpdate {
+    _lsn: number;
 }
 
 interface FetchMetadataResponseData {
@@ -76,7 +75,7 @@ class Main {
 
     private onPixelUpdateFromRemote(data: OnPixelUpdateData) {
         this.receivedUpdates.push(data);
-        this.canvas.queuePixelUpdate(data.update);
+        this.canvas.queuePixelUpdate(data);
     }
 
     /**
@@ -163,7 +162,7 @@ class Main {
             return {
                 x: update.x,
                 y: update.y,
-                color: update.colorIndex
+                color: update.color
             }
         });
 
