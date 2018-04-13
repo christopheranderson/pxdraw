@@ -18,6 +18,7 @@ To configure a different collection, please see [appsettings.Development.json](.
 * CosmosDB > PreferredLocations: Comma separated list of [PreferredLocations](https://docs.microsoft.com/dotnet/api/microsoft.azure.documents.client.connectionpolicy.preferredlocations?view=azure-dotnet).
 * CosmosDB > Endpoint: Cosmos DB Account endpoint.
 * CosmosDB > MasterKey: Cosmos DB Account master key.
+* CosmosDB > PollingInterval: Max polling interval in seconds for the Change Feed.
 
 ## Deploy instructions
 
