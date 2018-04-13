@@ -1,3 +1,5 @@
+/// <reference path="../node_modules/@aspnet/signalr/dist/esm/index.d.ts" />
+
 /**
  * Client that receives the updates
  * Based on signalR.
@@ -11,7 +13,7 @@
 
  class UpdateClient {
     private params: UpdateClientParameters;
-    private connection:SignalR.Connection;
+    private connection:any; // TODO Add types here
 
     constructor(params: UpdateClientParameters) {
         this.params = params;
@@ -22,8 +24,8 @@
      * @param url
      */
     public init(url: string): JQueryPromise<any> {
-        this.connection = $.connection(url);
-        this.connection.received((data:any) => {
+        this.connection = new signalR.HubConnection(url);
+        this.connection.on('Changes', (data:any) => {
             // TODO Error checking here
             if (!data) {
                 return;
