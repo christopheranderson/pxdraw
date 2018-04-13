@@ -18,8 +18,7 @@ interface CanvasColor {
     a: number;
 }
 
-interface PixelUpdate {
-    position: Point2D;
+interface PixelUpdate extends Point2D {
     colorIndex: number;
 }
 
@@ -162,8 +161,8 @@ class Main {
     private submitPixelUpdates(updates: PixelUpdate[]) {
         const data = updates.map((update: PixelUpdate) => {
             return {
-                x: update.position.x,
-                y: update.position.y,
+                x: update.x,
+                y: update.y,
                 color: update.colorIndex
             }
         });

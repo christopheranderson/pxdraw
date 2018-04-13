@@ -31,7 +31,8 @@
         const color = Math.floor(Math.random() * 16);
         const update:OnPixelUpdateData = {
             update: {
-                position: { x: x, y: y },
+                x: x,
+                y: y,
                 colorIndex: color
             },
             LSN: 0

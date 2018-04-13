@@ -39,8 +39,8 @@ class Canvas {
 
     // state
     private isFreehandEnabled = true;
-    private pendingDrawnUpdates: PixelUpdate[] = [];
     private isMouseDown: boolean = false;
+    private drawingBuffer: DrawingBuffer;
 
      // This array buffer will hold color data to be drawn to the canvas.
      private buffer: ArrayBuffer;
@@ -50,6 +50,7 @@ class Canvas {
      // This view into the buffer is used to write.  Values written should be
      // 32 bit colors stored as AGBR (rgba in reverse).
      private writeBuffer: Uint32Array;
+
 
     // private queuedUpdate: PixelUpdate[] = [];
 
@@ -95,6 +96,8 @@ class Canvas {
         this.buffer = new ArrayBuffer(Canvas.BOARD_WIDTH_PX * Canvas.BOARD_HEIGHT_PX * 4);
         this.readBuffer = new Uint8ClampedArray(this.buffer);
         this.writeBuffer = new Uint32Array(this.buffer);
+
+        this.drawingBuffer = new DrawingBuffer(this.isFreehandEnabled);
 
         // TODO REMOVE THIS
         this.loadDummyImage();
@@ -184,52 +187,38 @@ class Canvas {
         this.currentPositionStr(`(${position.x}, ${position.y})`);
 
         if (this.isFreehandEnabled && this.isMouseDown) {
-            this.paintPixel(position, this.selectedColorIndex());
-
-            // don't dupe last updates
-            if (this.pendingDrawnUpdates.length > 0) {
-                const lastUpdate = this.pendingDrawnUpdates[this.pendingDrawnUpdates.length - 1];
-                if (position.x === lastUpdate.position.x && position.y === lastUpdate.position.y &&
-                    this.selectedColorIndex() === lastUpdate.colorIndex) {
-                        // console.log('skipping redundant update');
-                        return;
-                    }
-            }
-
-            if (this.pendingDrawnUpdates)
-            this.pendingDrawnUpdates.push({
-                position: position,
-                colorIndex: this.selectedColorIndex()
+            const updates = this.drawingBuffer.penMove(position, this.selectedColorIndex());
+            $.each(updates, (index:number, update: PixelUpdate) => {
+                this.paintToCanvas(update);
             });
         }
-        // console.log(position);
     }
 
     private onMouseDown(e: MouseEvent) {
         this.isMouseDown = true;
-
         const position = this.getCanvasCoordinates(e.clientX, e.clientY);
-        this.paintPixel(position, this.selectedColorIndex());
-        this.pendingDrawnUpdates = [{
-            position: position,
-            colorIndex: this.selectedColorIndex()
-        }];
-    }
+
+        const updates = this.drawingBuffer.penDown(position, this.selectedColorIndex());
+        $.each(updates, (index:number, update: PixelUpdate) => {
+            this.paintToCanvas(update);
+        });
+}
 
     private onMouseUp(e: MouseEvent) {
         this.isMouseDown = false;
+        this.drawingBuffer.penUp();
         this.flushUpdates();
     }
 
     private flushUpdates() {
-        this.params.onPixelUpdatesSubmitted(this.pendingDrawnUpdates);
-        this.pendingDrawnUpdates = [];
+        this.params.onPixelUpdatesSubmitted(this.drawingBuffer.getAllUpdates());
+        this.drawingBuffer.reset();
     }
 
-    private paintPixel(position: Point2D, colorIndex: number) {
-        const color = this.availableColors()[colorIndex];
+    private paintToCanvas(update: PixelUpdate) {
+        const color = this.availableColors()[update.colorIndex];
         if (!color) {
-            console.error('Unknown colorIndex', colorIndex);
+            console.error('Unknown colorIndex', update.colorIndex);
             return;
         }
         const imgData = this.context.createImageData(1,1);
@@ -238,7 +227,7 @@ class Canvas {
         d[1] = color.g;
         d[2] = color.b;
         d[3] = color.a;
-        this.context.putImageData(imgData, position.x, position.y);
+        this.context.putImageData(imgData, update.x, update.y);
     }
 
     /**
@@ -257,7 +246,7 @@ class Canvas {
 
     public queuePixelUpdate(data: PixelUpdate) {
         // for now, just draw it
-        this.paintPixel(data.position, data.colorIndex);
+        this.paintToCanvas(data);
     }
 
     /**
@@ -278,7 +267,7 @@ class Canvas {
         return dataView.getUint32(0);
     }
 
-    private paintBuffer(position: Point2D, colorIndex: number) {
+    private paintToBuffer(position: Point2D, colorIndex: number) {
         const i = Canvas.coordinates2BufferIndex(position);
         this.writeBuffer[i] = this.colorIndex2ABGR(colorIndex);
     }
@@ -294,7 +283,7 @@ class Canvas {
         for (let i = 0; i<board.byteLength; i++) {
             const colorIndex = board[i];
             // this.paintPixel({ x:x, y:y }, colorIndex);
-            this.paintBuffer({ x:x, y:y }, colorIndex);
+            this.paintToBuffer({ x:x, y:y }, colorIndex);
 
             if (++x >= Canvas.BOARD_WIDTH_PX) {
                 x = 0;
