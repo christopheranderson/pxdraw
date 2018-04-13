@@ -23,7 +23,17 @@
      */
     public init(url: string): JQueryPromise<any> {
         this.connection = $.connection(url);
-        this.connection.received(this.params.onConnected);
+        this.connection.received((data:any) => {
+            // TODO Error checking here
+            if (!data) {
+                return;
+            }
+
+            // TODO handle parse issue
+            const update: OnPixelUpdateData = JSON.parse(data);
+
+            this.params.onReceived(update)
+        });
         return this.connection.start();
 
         // TODO generate fake updates for now
