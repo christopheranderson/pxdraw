@@ -7,6 +7,7 @@ namespace PxDRAW.SignalR.ChangeFeed
     using System;
     using System.Globalization;
     using System.Linq;
+    using System.Net;
     using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -91,20 +92,20 @@ namespace PxDRAW.SignalR.ChangeFeed
                         {
                             DocumentClientException dcex = (DocumentClientException)exceptionDispatchInfo.SourceException;
 
-                            if ((StatusCode)dcex.StatusCode == StatusCode.NotFound && (SubStatusCode)this.GetSubStatusCode(dcex) != SubStatusCode.ReadSessionNotAvailable)
+                            if ((HttpStatusCode)dcex.StatusCode == HttpStatusCode.NotFound && (SubStatusCode)this.GetSubStatusCode(dcex) != SubStatusCode.ReadSessionNotAvailable)
                             {
                                  // Most likely, the database or collection was removed while we were enumerating.
                                 this.telemetryClient.TrackException(dcex);
                                 this.isRunning = false;
                                 break;
                             }
-                            else if ((StatusCode)dcex.StatusCode == StatusCode.Gone)
+                            else if ((HttpStatusCode)dcex.StatusCode == HttpStatusCode.Gone)
                             {
                                 SubStatusCode subStatusCode = (SubStatusCode)this.GetSubStatusCode(dcex);
                                 this.telemetryClient.TrackException(dcex);
                             }
-                            else if ((StatusCode)dcex.StatusCode == StatusCode.TooManyRequests ||
-                                 (StatusCode)dcex.StatusCode == StatusCode.ServiceUnavailable)
+                            else if ((HttpStatusCode)dcex.StatusCode == HttpStatusCode.TooManyRequests ||
+                                 (HttpStatusCode)dcex.StatusCode == HttpStatusCode.ServiceUnavailable)
                             {
                                 this.telemetryClient.TrackEvent($"Retriable exception: {dcex.Message}");
                             }
