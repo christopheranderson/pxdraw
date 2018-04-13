@@ -19,6 +19,7 @@ namespace PxDRAW.SignalR.Hubs
         /// <returns>A Task</returns>
         public override async Task OnConnectedAsync()
         {
+            // TODO: Define if we want logging here
         }
 
         /// <summary>
@@ -28,6 +29,7 @@ namespace PxDRAW.SignalR.Hubs
         /// <returns>A Task</returns>
         public override async Task OnDisconnectedAsync(Exception ex)
         {
+            // TODO: Define if we want logging here
         }
     }
 }

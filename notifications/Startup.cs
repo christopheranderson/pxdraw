@@ -24,11 +24,6 @@ namespace PxDRAW.SignalR
 
         public void ConfigureServices(IServiceCollection services)
         {
-            var aiOptions = new Microsoft.ApplicationInsights.AspNetCore.Extensions.ApplicationInsightsServiceOptions
-            {
-                EnableAdaptiveSampling = false,
-            };
-            services.AddApplicationInsightsTelemetry(aiOptions);
             services.AddCors(options =>
             {
                 options.AddPolicy(

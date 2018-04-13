@@ -7,6 +7,7 @@ namespace PxDRAW.SignalR.ChangeFeed
     using System;
     using System.Globalization;
     using System.Linq;
+    using System.Net;
     using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -31,13 +32,15 @@ namespace PxDRAW.SignalR.ChangeFeed
         private DocumentClient documentClient;
         private Uri collectionLink;
 
-        public ChangeFeedReader(TelemetryClient telemetryClient, IConfiguration configuration, IHubContext<ClientHub> signalRHubContext)
+        public ChangeFeedReader(IConfiguration configuration, IHubContext<ClientHub> signalRHubContext)
         {
             var cosmosDbConfiguration = ChangeFeedReader.BuildConfigurationForSection(configuration, "CosmosDB");
-            this.telemetryClient = telemetryClient;
             this.cosmosDbConfiguration = cosmosDbConfiguration;
             this.signalRHubContext = signalRHubContext;
-            this.telemetryClient.TrackEvent($"Detected configuration for PxDRAW collection: {cosmosDbConfiguration.ToString()}");
+            this.telemetryClient = new TelemetryClient(new Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration()
+            {
+                InstrumentationKey = ChangeFeedReader.DetectAppInsightsInstrumentationKey(configuration),
+            });
         }
 
         public Task StartAsync(CancellationToken cancellation)
@@ -64,7 +67,6 @@ namespace PxDRAW.SignalR.ChangeFeed
                 ChangeFeedOptions options = new ChangeFeedOptions
                 {
                     MaxItemCount = -1,
-                    StartFromBeginning = true,
                     PartitionKeyRangeId = "0",
                 };
 
@@ -90,20 +92,20 @@ namespace PxDRAW.SignalR.ChangeFeed
                         {
                             DocumentClientException dcex = (DocumentClientException)exceptionDispatchInfo.SourceException;
 
-                            if ((StatusCode)dcex.StatusCode == StatusCode.NotFound && (SubStatusCode)this.GetSubStatusCode(dcex) != SubStatusCode.ReadSessionNotAvailable)
+                            if ((HttpStatusCode)dcex.StatusCode == HttpStatusCode.NotFound && (SubStatusCode)ChangeFeedReader.GetSubStatusCode(dcex) != SubStatusCode.ReadSessionNotAvailable)
                             {
                                  // Most likely, the database or collection was removed while we were enumerating.
                                 this.telemetryClient.TrackException(dcex);
                                 this.isRunning = false;
                                 break;
                             }
-                            else if ((StatusCode)dcex.StatusCode == StatusCode.Gone)
+                            else if ((HttpStatusCode)dcex.StatusCode == HttpStatusCode.Gone)
                             {
-                                SubStatusCode subStatusCode = (SubStatusCode)this.GetSubStatusCode(dcex);
+                                SubStatusCode subStatusCode = (SubStatusCode)ChangeFeedReader.GetSubStatusCode(dcex);
                                 this.telemetryClient.TrackException(dcex);
                             }
-                            else if ((StatusCode)dcex.StatusCode == StatusCode.TooManyRequests ||
-                                 (StatusCode)dcex.StatusCode == StatusCode.ServiceUnavailable)
+                            else if ((HttpStatusCode)dcex.StatusCode == HttpStatusCode.TooManyRequests ||
+                                 (HttpStatusCode)dcex.StatusCode == HttpStatusCode.ServiceUnavailable)
                             {
                                 this.telemetryClient.TrackEvent($"Retriable exception: {dcex.Message}");
                             }
@@ -134,9 +136,9 @@ namespace PxDRAW.SignalR.ChangeFeed
                         if (readChangesResponse != null)
                         {
                             var results = readChangesResponse.ToList();
-                            this.telemetryClient.TrackTrace($"Detected {results.Count} documents.");
                             if (results.Count > 0)
                             {
+                                this.telemetryClient.TrackTrace($"Detected {results.Count} documents.");
                                 await this.signalRHubContext.Clients.All.SendAsync("Changes", JsonConvert.SerializeObject(results));
                             }
                             else
@@ -170,7 +172,7 @@ namespace PxDRAW.SignalR.ChangeFeed
 
             if (cosmosDbConfiguration.Endpoint.Contains("localhost"))
             {
-                // Emulator does not support Direct/TCP
+                // Emulator does not support PreferredLocations
                 return connectionPolicy;
             }
 
@@ -182,7 +184,12 @@ namespace PxDRAW.SignalR.ChangeFeed
             return connectionPolicy;
         }
 
-        private int GetSubStatusCode(DocumentClientException exception)
+        private static string DetectAppInsightsInstrumentationKey(IConfiguration configuration)
+        {
+            return configuration.GetSection("ApplicationInsights")?.GetValue<string>("InstrumentationKey", string.Empty) ?? string.Empty;
+        }
+
+        private static int GetSubStatusCode(DocumentClientException exception)
         {
             const string SubStatusHeaderName = "x-ms-substatus";
             string valueSubStatus = exception.ResponseHeaders.Get(SubStatusHeaderName);
