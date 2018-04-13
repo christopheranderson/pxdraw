@@ -6,11 +6,13 @@
         "jquery": "3.3.1",
         "knockout": "3.4.2",
         "jquery.panzoom": "3.2.2",
-        "jquery.mousewheel": "3.1.9"
+        "jquery.mousewheel": "3.1.9",
+        "signalr": "2.2.3"
     },
     "devDependencies": {
         "@types/jquery": "3.3.1",
         "@types/knockout": "3.4.53",
+        "@types/signalr": "2.2.35",
         "lite-server": "^2.3.0",
         "typescript": "^2.8.1"
     },

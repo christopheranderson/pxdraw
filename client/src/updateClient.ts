@@ -11,18 +11,23 @@
 
  class UpdateClient {
     private params: UpdateClientParameters;
+    private connection:SignalR.Connection;
+
     constructor(params: UpdateClientParameters) {
         this.params = params;
-
     }
 
     /**
      * Initialize
      * @param url
      */
-    public init(url: string) {
+    public init(url: string): JQueryPromise<any> {
+        this.connection = $.connection(url || 'blah');
+        this.connection.received(this.params.onConnected);
+        return this.connection.start();
+
         // TODO generate fake updates for now
-        setInterval(this.generateRandomUpdate.bind(this), 1);
+        // setInterval(this.generateRandomUpdate.bind(this), 1);
     }
 
     private generateRandomUpdate() {

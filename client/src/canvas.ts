@@ -62,8 +62,11 @@ class Canvas {
         this.context.imageSmoothingEnabled = false;
 
         this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this), false);
+        this.canvas.addEventListener('touchstart', this.onMouseDown.bind(this), false);
         this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this), false);
+        this.canvas.addEventListener('touchend', this.onMouseUp.bind(this), false);
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this), false);
+        this.canvas.addEventListener('touchmove', this.onMouseMove.bind(this), false);
 
         var $section = $('#canvas-container');
         var $panzoom = $section.find('#canvas').panzoom({
