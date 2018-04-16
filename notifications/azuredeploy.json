@@ -1,0 +1,179 @@
+﻿{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "siteName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the web app that you wish to create."
+      }
+    },
+    "hostingPlanName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the App Service plan to use for hosting the web app."
+      }
+    },
+    "sku": {
+      "type": "string",
+      "allowedValues": [
+        "F1",
+        "D1",
+        "B1",
+        "B2",
+        "B3",
+        "S1",
+        "S2",
+        "S3",
+        "P1",
+        "P2",
+        "P3",
+        "P4"
+      ],
+      "defaultValue": "S1",
+      "metadata": {
+        "description": "The pricing tier for the hosting plan."
+      }
+    },
+    "workerSize": {
+      "type": "string",
+      "allowedValues": [
+        "0",
+        "1",
+        "2"
+      ],
+      "defaultValue": "0",
+      "metadata": {
+        "description": "The instance size of the hosting plan (small, medium, or large)."
+      }
+    },
+    "cosmosDBAccountUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Cosmos DB Account Endpoint."
+      }
+    },
+    "cosmosDBAccountMasterKey": {
+      "type": "string",
+      "metadata": {
+        "description": "Cosmos DB Account Master Key."
+      }
+    },
+    "cosmosDBAccountPreferredLocations": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Comma separated list of Azure Regions to use as preferred read regions."
+      }
+    },
+    "cosmosDBDatabaseName": {
+      "type": "string",
+      "defaultValue": "pxdraw",
+      "metadata": {
+        "description": "Name of the Cosmos DB database that holds the pixel collection."
+      }
+    },
+    "cosmosDBCollectionName": {
+      "type": "string",
+      "defaultValue": "pixels",
+      "metadata": {
+        "description": "Name of the Cosmos DB collection that stores the pixels."
+      }
+    },
+    "cosmosDBPollingInterval": {
+      "type": "string",
+      "defaultValue": "5",
+      "metadata": {
+        "description": "Maximum polling interval in seconds for the Change Feed."
+      }
+    },
+    "appInsightsKey": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "App Insights IntrumentationKey to log events."
+      }
+    }
+  },
+  "variables": {
+    "repoURL": "https://github.com/christopheranderson/pxdraw.git",
+    "branch": "master"
+  },
+  "resources": [
+    {
+      "apiVersion": "2015-08-01",
+      "name": "[parameters('hostingPlanName')]",
+      "type": "Microsoft.Web/serverfarms",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "[parameters('sku')]",
+        "capacity": "[parameters('workerSize')]"
+      },
+      "properties": {
+        "name": "[parameters('hostingPlanName')]"
+      }
+    },
+    {
+      "apiVersion": "2015-08-01",
+      "name": "[parameters('siteName')]",
+      "type": "Microsoft.Web/sites",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', parameters('hostingPlanName'))]"
+      ],
+      "properties": {
+        "serverFarmId": "[parameters('hostingPlanName')]",
+        "siteConfig": {
+          "use32BitWorkerProcess": false,
+          "alwaysOn": true,
+          "webSocketsEnabled": true
+        }
+      },
+      "resources": [
+        {
+          "type": "siteextensions",
+          "name": "AspNetCoreRuntime.2.1.x64",
+          "apiVersion": "2015-04-01",
+          "location": "[resourceGroup().location]",
+          "properties": {
+            "version": "2.1.0-preview2-final"
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', parameters('siteName'))]"
+          ]
+        },
+        {
+          "apiVersion": "2016-03-01",
+          "name": "appsettings",
+          "type": "config",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', parameters('siteName'))]",
+            "[concat('Microsoft.Web/sites/', parameters('siteName'), '/sourcecontrols/web')]"
+          ],
+          "properties": {
+            "CosmosDB:Endpoint": "[parameters('cosmosDBAccountUrl')]",
+            "CosmosDB:MasterKey": "[parameters('cosmosDBAccountMasterKey')]",
+            "CosmosDB:PreferredLocations": "[parameters('cosmosDBAccountPreferredLocations')]",
+            "CosmosDB:DatabaseName": "[parameters('cosmosDBDatabaseName')]",
+            "CosmosDB:CollectionName": "[parameters('cosmosDBCollectionName')]",
+            "CosmosDB:PollingInterval": "[parameters('cosmosDBPollingInterval')]",
+            "ApplicationInsights:InstrumentationKey": "[parameters('appInsightsKey')]"
+          }
+        },
+        {
+          "apiVersion": "2015-08-01",
+          "name": "web",
+          "type": "sourcecontrols",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', parameters('siteName'))]"
+          ],
+          "properties": {
+            "RepoUrl": "[parameters('repoURL')]",
+            "branch": "[parameters('branch')]",
+            "IsManualIntegration": true
+          }
+        }
+      ]
+    }
+  ]
+}
