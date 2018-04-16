@@ -1,2 +1,7 @@
 {
+  "logger": {
+    "categoryFilter": {
+      "defaultLevel": "Trace"
+    }
+  }
 }
