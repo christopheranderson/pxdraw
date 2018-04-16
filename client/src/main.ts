@@ -53,7 +53,7 @@ class Main {
     private websocketEndpoint: string;
 
     public constructor() {
-        
+
     }
 
     public async init(){
@@ -66,8 +66,6 @@ class Main {
         });
 
         await this.fetchMetadata();
-
-        // TODO chain this to fetch metadata in order to get valid URL
         this.updateClient.init(this.websocketEndpoint);
         this.fetchBoard();
     }
@@ -125,6 +123,10 @@ class Main {
                     this.updatePixelEndpoint = data.updatePixelEndpoint;
                     this.websocketEndpoint = data.websocketEndpoint;
                     resolve();
+                },
+                error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
+                    console.error(`Failed to fetch metadata:${errorThrown}`);
+                    reject(errorThrown);
                 }
             });
         });
@@ -164,27 +166,25 @@ class Main {
 
     }
 
-    private submitPixelUpdates(updates: PixelUpdate[]) {
-        const data = updates.map((update: PixelUpdate) => {
-            return {
-                x: update.x,
-                y: update.y,
-                color: update.color
-            }
-        });
-
-        $.ajax({
-            type: 'POST',
-            url: this.updatePixelEndpoint,
-            dataType: "json",
-            contentType: "application/json",
-            beforeSend: function (request) {
-                request.setRequestHeader('x-ms-client-principal-id', Main.LOCALHOST_CLIENT_PRINCIPAL_ID);
-            },
-            data: JSON.stringify(data, null, " "),
-            success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
-                console.log("Data: " + data + "\nStatus: " + textStatus);
-            }
+    private async submitPixelUpdates(updates: PixelUpdate[]) {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                type: 'POST',
+                url: this.updatePixelEndpoint,
+                dataType: "json",
+                contentType: "application/json",
+                beforeSend: function (request) {
+                    request.setRequestHeader('x-ms-client-principal-id', Main.LOCALHOST_CLIENT_PRINCIPAL_ID);
+                },
+                data: JSON.stringify(updates, null, " "),
+                success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
+                    console.log("Data: " + data + "\nStatus: " + textStatus);
+                },
+                error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
+                    console.error(`Failed to submit pixel update:${errorThrown}`);
+                    reject(errorThrown);
+                }
+            });
         });
     }
 }
