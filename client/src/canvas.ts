@@ -52,6 +52,8 @@ class Canvas {
     private touchState: TouchState;
     private updateScrollbarTimoutId: number = 0;
 
+    private scrollIntervalId: number;
+
      // This array buffer will hold color data to be drawn to the canvas.
      private buffer: ArrayBuffer;
      // This view into the buffer is used to construct the PixelData object
@@ -83,7 +85,7 @@ class Canvas {
             cursor: 'default',
             which: 3,
             // panOnlyWhenZoomed: true,
-            disablePan: true,
+            disablePan: false,
             minScale: Canvas.ZOOM_MIN_SCALE,
             maxScale: Canvas.ZOOM_MAX_SCALE,
             contain: 'automatic'
@@ -96,7 +98,6 @@ class Canvas {
                 animate: false,
                 focal: e
             });
-            this.updateScrollbars(true);
         });
 
         this.panZoomElement.on('panzoomchange', (e: any, panzoom: any, transform: number[]) => {
@@ -116,29 +117,6 @@ class Canvas {
 
         // TODO REMOVE THIS
         this.loadDummyImage();
-    }
-
-    /**
-     * Debounce to prevent the scrollbars from blinking
-     * @param debounce
-     */
-    private updateScrollbars(debounce: boolean) {
-        this.canvasContainerElement.css('overflow', 'hidden');
-
-        if (this.updateScrollbarTimoutId) {
-            clearTimeout(this.updateScrollbarTimoutId);
-        }
-        if (debounce) {
-            this.updateScrollbarTimoutId = setTimeout(this.executeUpdateScrollbars.bind(this), 500);
-        } else {
-            setTimeout(this.executeUpdateScrollbars.bind(this));
-        }
-    }
-
-    private executeUpdateScrollbars() {
-        if (this.zoomScale > Canvas.ZOOM_MIN_SCALE) {
-            this.canvasContainerElement.css('overflow', 'scroll');
-        }
     }
 
     private selectColorIndex(index: number) {
@@ -215,7 +193,7 @@ class Canvas {
 
             // subtract the cavas size by the image center, that's how far we need to move it.
             imageXPos = canvas_center_x - image_center_x;
-            imageYPos = canvas_center_y - image_center_y;
+            imageYPos = 50;// canvas_center_y - image_center_y;
 
         }
     }
@@ -233,13 +211,12 @@ class Canvas {
             if (e.touches.length > 1 || this.touchState === TouchState.MultiDown) {
                 this.touchState = TouchState.MultiDown;
                 // Multitouching (pinching)
-                this.updateScrollbars(false);
                 return;
             }
             const t = (<TouchEvent>e).touches[0];
             position = this.getCanvasCoordinates(t.clientX, t.clientY);
 
-            e.preventDefault();
+            e.stopImmediatePropagation();
         } else {
             console.error('Unknown event', e);
             return;
@@ -405,5 +382,29 @@ class Canvas {
         // Now paint over canvas
         const imageData = new ImageData(this.readBuffer, Canvas.BOARD_WIDTH_PX, Canvas.BOARD_HEIGHT_PX);
         this.context.putImageData(imageData, 0, 0);
+    }
+
+    private scrollUpStart() {
+        this.scrollIntervalId = setInterval(() => {
+            this.panZoomElement.panzoom('pan', 0, 100, { relative: true });
+        }, 200);
+    }
+    private scrollDownStart() {
+        this.scrollIntervalId = setInterval(() => {
+            this.panZoomElement.panzoom('pan', 0, -100, { relative: true });
+        }, 200);
+    }
+    private scrollLeftStart() {
+        this.scrollIntervalId = setInterval(() => {
+            this.panZoomElement.panzoom('pan', 100, 0, { relative: true });
+        }, 200);
+    }
+    private scrollRightStart() {
+        this.scrollIntervalId = setInterval(() => {
+            this.panZoomElement.panzoom('pan', -100, 0, { relative: true });
+        }, 200);
+    }
+    private scrollStop() {
+        clearInterval(this.scrollIntervalId);
     }
 }
