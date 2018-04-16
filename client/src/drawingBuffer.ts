@@ -26,9 +26,10 @@ class DrawingBuffer {
         this.isPenDown = true;
         this.lastPosition = position;
 
-        const updates = this.drawSpot(position, color);
-        this.updateAggregator.addUpdates(updates);
-        return updates;
+        // const updates = this.drawSpot(position, color);
+        // this.updateAggregator.addUpdates(updates);
+        // return updates;
+        return [];
     }
 
     /**
@@ -68,8 +69,15 @@ class DrawingBuffer {
     /**
      * Move pen up
      */
-    public penUp() {
+    public penUp(position: Point2D, color: number): PixelUpdate[] {
         this.isPenDown = false;
+
+        let updates: PixelUpdate[] = [];
+        if (position) {
+            updates = this.drawSpot(position, color);
+            this.updateAggregator.addUpdates(updates);
+            }
+        return updates;
     }
 
     public getAllUpdates(): PixelUpdate[] {
