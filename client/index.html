@@ -19,10 +19,14 @@
 
 <body>
     <div class="header">
-        <img src="img/CosmosDB_gray.svg">
+        <img src="img/CosmosDB_color.png">
         <div class="text-container">
             <div class="title">Azure Cosmos DB <strong>PxDRAW</strong></div>
-            <p class="description">Welcome to Azure Cosmos DB PxDRAW! PxDRAW is a collaborative project. Draw on the canvas, one pixel a time.</p>
+            <p class="description">Welcome to Azure Cosmos DB PxDRAW! PxDRAW is a collaborative project. Pick a color on the left and draw on the canvas, one pixel a time.</p>
+            <div class="tweet-area">
+                <a href="https://twitter.com/intent/tweet?button_hashtag=LoveCosmosDB&ref_src=twsrc%5Etfw" class="twitter-hashtag-button" data-show-count="false">Tweet #LoveCosmosDB</a>
+                <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </div>
         </div>
     </div>
     <div class="main-area">
@@ -36,10 +40,12 @@
         <div id="canvas-container">
             <canvas id="canvas" width="1000" height="1000"></canvas>
         </div>
-        <div class="tweet-area">
-            <a href="https://twitter.com/intent/tweet?button_hashtag=LoveCosmosDB&ref_src=twsrc%5Etfw" class="twitter-hashtag-button" data-show-count="false">Tweet #LoveCosmosDB</a>
-            <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-        </div>
+    </div>
+    <div>
+        <button data-bind="event:{ mousedown:scrollUpStart, mouseup:scrollStop, touchstart:scrollUpStart, touchend:scrollStop }">Move Up</button>
+        <button data-bind="event:{ mousedown:scrollDownStart, mouseup:scrollStop, touchstart:scrollDownStart, touchend:scrollStop }">Move Down</button>
+        <button data-bind="event:{ mousedown:scrollLeftStart, mouseup:scrollStop, touchstart:scrollLeftStart, touchend:scrollStop }">Move Left</button>
+        <button data-bind="event:{ mousedown:scrollRightStart, mouseup:scrollStop, touchstart:scrollRightStart, touchend:scrollStop }">Move Right</button>
     </div>
 
 </body>

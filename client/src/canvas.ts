@@ -5,9 +5,16 @@ interface CanvasParameters {
     onPixelUpdatesSubmitted: (updates: PixelUpdate[]) => void; // called when pixel updates submitted by user
 }
 
+enum TouchState {
+    SingleDown,
+    MultiDown,
+    Up
+}
 class Canvas {
     public static readonly BOARD_WIDTH_PX = 1000;
     public static readonly BOARD_HEIGHT_PX = 1000;
+    private static readonly ZOOM_MIN_SCALE = 1;
+    private static readonly ZOOM_MAX_SCALE = 40;
 
     // 16 colors according to this: http://www.december.com/html/spec/color16codes.html
     private static readonly COLOR_PALETTE_16: CanvasColor[] = [
@@ -36,11 +43,16 @@ class Canvas {
     private availableColors: KnockoutObservableArray<CanvasColor>;
     private selectedColorIndex: KnockoutObservable<number>;
     private params: CanvasParameters;
+    private panZoomElement: Panzoom;
+    private canvasContainerElement: JQuery<HTMLElement>;
 
     // state
     private isFreehandEnabled = true;
-    private isMouseDown: boolean = false;
     private drawingBuffer: DrawingBuffer;
+    private touchState: TouchState;
+    private updateScrollbarTimoutId: number = 0;
+
+    private scrollIntervalId: number;
 
      // This array buffer will hold color data to be drawn to the canvas.
      private buffer: ArrayBuffer;
@@ -68,28 +80,28 @@ class Canvas {
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this), false);
         this.canvas.addEventListener('touchmove', this.onMouseMove.bind(this), false);
 
-        var $section = $('#canvas-container');
-        var $panzoom = $section.find('#canvas').panzoom({
+        this.canvasContainerElement = $('#canvas-container');
+        this.panZoomElement = this.canvasContainerElement.find('#canvas').panzoom({
             cursor: 'default',
             which: 3,
             // panOnlyWhenZoomed: true,
-            // disablePan: true,
-            minScale: 1,
-            maxScale: 40
+            disablePan: false,
+            minScale: Canvas.ZOOM_MIN_SCALE,
+            maxScale: Canvas.ZOOM_MAX_SCALE,
+            contain: 'automatic'
         });
-        $panzoom.parent().on('mousewheel.focal', function( e:any ) {
-          e.preventDefault();
-          var delta = e.delta || e.originalEvent.wheelDelta;
-          var zoomOut = delta ? delta < 0 : e.originalEvent.deltaY > 0;
-          $panzoom.panzoom('zoom', zoomOut, {
-            animate: false,
-            focal: e
-          });
+        this.panZoomElement.parent().on('mousewheel.focal', (e: any) => {
+            e.preventDefault();
+            var delta = e.delta || e.originalEvent.wheelDelta;
+            var zoomOut = delta ? delta < 0 : e.originalEvent.deltaY > 0;
+            this.panZoomElement.panzoom('zoom', zoomOut, {
+                animate: false,
+                focal: e
+            });
         });
 
-        const self = this;
-        $panzoom.on('panzoomchange', function(e: any, panzoom: any, transform: number[]) {
-            self.zoomScale = transform[0];
+        this.panZoomElement.on('panzoomchange', (e: any, panzoom: any, transform: number[]) => {
+            this.zoomScale = transform[0];
         });
         this.currentPositionStr = ko.observable('');
 
@@ -101,6 +113,7 @@ class Canvas {
         this.writeBuffer = new Uint32Array(this.buffer);
 
         this.drawingBuffer = new DrawingBuffer(this.isFreehandEnabled);
+        this.touchState = TouchState.Up;
 
         // TODO REMOVE THIS
         this.loadDummyImage();
@@ -180,16 +193,38 @@ class Canvas {
 
             // subtract the cavas size by the image center, that's how far we need to move it.
             imageXPos = canvas_center_x - image_center_x;
-            imageYPos = canvas_center_y - image_center_y;
+            imageYPos = 50;// canvas_center_y - image_center_y;
 
         }
     }
 
-    private onMouseMove(e: MouseEvent) {
-        const position = this.getCanvasCoordinates(e.clientX, e.clientY);
-        this.currentPositionStr(`(${position.x}, ${position.y})`);
+    private onMouseMove(e: MouseEvent | TouchEvent) {
+        let position;
+        if (e instanceof MouseEvent) {
+            if (e.button !== 0) {
+                // Ignore all but left button down
+                return;
+            }
+            position = this.getCanvasCoordinates(e.clientX, e.clientY);
 
-        if (this.isFreehandEnabled && this.isMouseDown) {
+        } else if (e instanceof TouchEvent) {
+            if (e.touches.length > 1 || this.touchState === TouchState.MultiDown) {
+                this.touchState = TouchState.MultiDown;
+                // Multitouching (pinching)
+                return;
+            }
+            const t = (<TouchEvent>e).touches[0];
+            position = this.getCanvasCoordinates(t.clientX, t.clientY);
+
+            e.stopImmediatePropagation();
+        } else {
+            console.error('Unknown event', e);
+            return;
+        }
+
+        this.currentPositionStr(`(${position.x + 1}, ${position.y + 1})`);
+
+        if (this.isFreehandEnabled && this.touchState === TouchState.SingleDown) {
             const updates = this.drawingBuffer.penMove(position, this.selectedColorIndex());
             $.each(updates, (index:number, update: PixelUpdate) => {
                 this.paintToCanvas(update);
@@ -197,9 +232,33 @@ class Canvas {
         }
     }
 
-    private onMouseDown(e: MouseEvent) {
-        this.isMouseDown = true;
-        const position = this.getCanvasCoordinates(e.clientX, e.clientY);
+    private onMouseDown(e: MouseEvent | TouchEvent) {
+        let position;
+
+        if (e instanceof MouseEvent) {
+            if (e.button !== 0) {
+                // Ignore all but left button down
+                return;
+            }
+            this.touchState = TouchState.SingleDown;
+            position = this.getCanvasCoordinates(e.clientX, e.clientY);
+
+        } else if (e instanceof TouchEvent) {
+            const t = (<TouchEvent>e).touches[0];
+            position = this.getCanvasCoordinates(t.clientX, t.clientY);
+
+            switch(this.touchState) {
+                case TouchState.Up: this.touchState = TouchState.SingleDown; break;
+                case TouchState.SingleDown:
+                case TouchState.MultiDown:
+                    this.touchState = TouchState.MultiDown;
+                    break;
+                default: break;
+            }
+         } else {
+            console.error('Unknown event', e);
+            return;
+        }
 
         const updates = this.drawingBuffer.penDown(position, this.selectedColorIndex());
         $.each(updates, (index:number, update: PixelUpdate) => {
@@ -207,10 +266,36 @@ class Canvas {
         });
 }
 
-    private onMouseUp(e: MouseEvent) {
-        this.isMouseDown = false;
-        this.drawingBuffer.penUp();
-        this.flushUpdates();
+    private onMouseUp(e: MouseEvent | TouchEvent) {
+        if (this.touchState === TouchState.SingleDown) {
+            let position = null;
+            if (e instanceof MouseEvent) {
+                if (e.button !== 0) {
+                    // Ignore all but left button down
+                    return;
+                }
+                position = this.getCanvasCoordinates(e.clientX, e.clientY);
+            } else if (e instanceof TouchEvent) {
+
+                if (e.touches.length > 1) {
+                    const t = (<TouchEvent>e).touches[0];
+                    position = this.getCanvasCoordinates(t.clientX, t.clientY);
+                }
+
+            } else {
+                console.error('Unknown event', e);
+                return;
+            }
+
+            const updates = this.drawingBuffer.penUp(position, this.selectedColorIndex());
+            $.each(updates, (index:number, update: PixelUpdate) => {
+                this.paintToCanvas(update);
+            });
+
+            this.flushUpdates();
+        }
+
+        this.touchState = TouchState.Up;
     }
 
     private flushUpdates() {
@@ -297,5 +382,29 @@ class Canvas {
         // Now paint over canvas
         const imageData = new ImageData(this.readBuffer, Canvas.BOARD_WIDTH_PX, Canvas.BOARD_HEIGHT_PX);
         this.context.putImageData(imageData, 0, 0);
+    }
+
+    private scrollUpStart() {
+        this.scrollIntervalId = setInterval(() => {
+            this.panZoomElement.panzoom('pan', 0, 100, { relative: true });
+        }, 200);
+    }
+    private scrollDownStart() {
+        this.scrollIntervalId = setInterval(() => {
+            this.panZoomElement.panzoom('pan', 0, -100, { relative: true });
+        }, 200);
+    }
+    private scrollLeftStart() {
+        this.scrollIntervalId = setInterval(() => {
+            this.panZoomElement.panzoom('pan', 100, 0, { relative: true });
+        }, 200);
+    }
+    private scrollRightStart() {
+        this.scrollIntervalId = setInterval(() => {
+            this.panZoomElement.panzoom('pan', -100, 0, { relative: true });
+        }, 200);
+    }
+    private scrollStop() {
+        clearInterval(this.scrollIntervalId);
     }
 }

@@ -9,11 +9,12 @@
     disablePan?: boolean;
     minScale?: number;
     maxScale?: number;
+    contain?: string;
  }
 
  interface Panzoom {
     parent: () => JQuery;
-    panzoom: (eventName:string, event: any, opts: any) => void;
+    panzoom: (eventName:string, ...args: any[]) => void;
     on: (eventName: string, handler:(e: any, panzoom: any, transform: number[])=>void ) => void;
  }
 

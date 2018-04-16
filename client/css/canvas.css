@@ -1,9 +1,14 @@
 .header {
-    background-color: black;
+    background-color: #002050;
     color: white;
     font-family: Arial, Helvetica, sans-serif;
     display: flex;
     padding: 10px;
+    position: relative;
+}
+
+.header img {
+    max-height: 55px;
 }
 
 .text-container {
@@ -46,7 +51,6 @@
 
 #canvas-container {
     margin-left: 10px;
-    background-color: pink;
     width: 1000px;
     height: 1000px;
     border: 1px solid black;
@@ -65,4 +69,7 @@
 
 .tweet-area {
     margin: 10px;
+    position: absolute;
+    top: 0px;
+    right: 0px;
 }

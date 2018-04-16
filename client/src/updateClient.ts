@@ -13,7 +13,7 @@
 
  class UpdateClient {
     private params: UpdateClientParameters;
-    private connection: signalR.HubConnection; // TODO Add types here
+    private connection: signalR.HubConnection;
 
     constructor(params: UpdateClientParameters) {
         this.params = params;
@@ -30,27 +30,45 @@
         }
         this.connection = new signalR.HubConnection(url, options);
         this.connection.on('Changes', (data:any) => {
-            // TODO Error checking here
             if (!data) {
                 return;
             }
 
-            // TODO handle parse issue
-            const docs: OnPixelUpdateData[] = JSON.parse(data);
-            if (docs.length < 1) {
-                console.error('No valid update');
+            try {
+                const docs: OnPixelUpdateData[] = JSON.parse(data);
+                if (!Array.isArray(docs)) {
+                    console.error(`Change data not an array ${docs}`);
+                    return;
+                }
+
+                if (docs.length < 1) {
+                    console.error(`Change data is empty`);
+                    return;
+                }
+
+                for(const doc of docs)
+                {
+                    this.params.onReceived(doc);
+                }
+
+            } catch(e) {
+                console.error(`Failed to parse change data: ${e}`);
                 return;
             }
 
-            for(const doc of docs)
-            {
-                this.params.onReceived(doc);
-            }
         });
         return <any>this.connection.start();
 
         // TODO generate fake updates for now
         // setInterval(this.generateRandomUpdate.bind(this), 1);
+    }
+
+    /**
+     * Check if object is instance of OnPixelUpdateData
+     * @param object
+     */
+    private static isOnPixelUpdateData(object: any): boolean {
+        return 'x' in object && 'y' in object && 'color' in object && '_lsn' in object;
     }
 
     private generateRandomUpdate() {
