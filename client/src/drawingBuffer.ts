@@ -73,10 +73,16 @@ class DrawingBuffer {
         this.isPenDown = false;
 
         let updates: PixelUpdate[] = [];
+
+        if (!position) {
+            // Touch up doesn't provide position
+            position = this.lastPosition;
+        }
+
         if (position) {
             updates = this.drawSpot(position, color);
             this.updateAggregator.addUpdates(updates);
-            }
+        }
         return updates;
     }
 
@@ -98,8 +104,10 @@ class DrawingBuffer {
                 color: color
             });
         } else {
-            for (let x = position.x - DrawingBuffer.FREEHAND_PEN_SIZE_PX; x < position.x + DrawingBuffer.FREEHAND_PEN_SIZE_PX + 1; x++) {
-                for (let y = position.y - DrawingBuffer.FREEHAND_PEN_SIZE_PX; y < position.y + DrawingBuffer.FREEHAND_PEN_SIZE_PX + 1; y++) {
+            const maxX = position.x + DrawingBuffer.FREEHAND_PEN_SIZE_PX + 1;
+            const maxY = position.y + DrawingBuffer.FREEHAND_PEN_SIZE_PX + 1;
+            for (let x = position.x - DrawingBuffer.FREEHAND_PEN_SIZE_PX; x < maxX; x++) {
+                for (let y = position.y - DrawingBuffer.FREEHAND_PEN_SIZE_PX; y < maxY; y++) {
                     updates.push({
                         x: x,
                         y: y,
