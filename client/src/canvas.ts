@@ -245,7 +245,7 @@ class Canvas {
             return;
         }
 
-        this.currentPositionStr(`(${position.x}, ${position.y})`);
+        this.currentPositionStr(`(${position.x + 1}, ${position.y + 1})`);
 
         if (this.isFreehandEnabled && this.touchState === TouchState.SingleDown) {
             const updates = this.drawingBuffer.penMove(position, this.selectedColorIndex());
