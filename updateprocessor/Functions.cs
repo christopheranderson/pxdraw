@@ -15,16 +15,18 @@ namespace pxdraw.updateprocessor
     {
         [FunctionName("UpdateProcessor")]
         public async static Task UpdateProcessor([CosmosDBTrigger(
-            databaseName: "pxdraw",
-            collectionName: "board1",
+            databaseName: "%PXDRAW_COSMOS_DATABASE%",
+            collectionName: "%PXDRAW_COSMOS_COLLECTION%",
             ConnectionStringSetting = "PXDRAW_COSMOSDB_CONNECTION",
-            LeaseCollectionName = "leases")]IReadOnlyList<Document> docs, TraceWriter log)
+            LeaseCollectionName = "%PXDRAW_COSMOS_LEASE_COLLECTION%")]IReadOnlyList<Document> docs, TraceWriter log)
         {
             if (docs != null && docs.Count > 0)
             {
                 log.Info($"Processing {docs.Count} pixels");
-                var account = BlobUtilities.GetStorageAccount();
-                var blob = await BlobUtilities.GetBlob(account); // TODO: cache this blob in memory and then use HEAD requests to compare ETAG?
+                var bu = BlobClient.GetDefaultSingleton();
+                var containerName = GetDefaultConatinerName();
+                var boardName = GetDefaultBoardName();
+                var blob = await bu.GetBlob(containerName, boardName); // TODO: cache this blob in memory and then use HEAD requests to compare ETAG?
                 var board = new Board(blob);
                 foreach (var doc in docs)
                 {
@@ -39,7 +41,7 @@ namespace pxdraw.updateprocessor
                         log.Error($"Could not insert pixel: {doc.Id}", e);
                     }
                 }
-                await BlobUtilities.UpdateBlob(account, board.Bitmap);
+                await bu.UpdateBlob(containerName, boardName, board.Bitmap);
             }
         }
 
@@ -49,10 +51,23 @@ namespace pxdraw.updateprocessor
             log.LogInformation("Resetting board");
             bool isRandom = req.Headers.Contains("x-pxdraw-random");
 
+            var bu = BlobClient.GetDefaultSingleton();
+            var containerName = GetDefaultConatinerName();
+            var boardName = GetDefaultBoardName();
+
             Board board = Board.GenerateBoard(isRandom);
-            var account = BlobUtilities.GetStorageAccount();
-            await BlobUtilities.UpdateBlob(account, board.Bitmap);
+            await bu.UpdateBlob(containerName, boardName, board.Bitmap);
             return req.CreateResponse();
+        }
+
+        private static string GetDefaultConatinerName()
+        {
+            return Environment.GetEnvironmentVariable("PXDRAW_CONTAINER_NAME") ?? throw new InvalidOperationException("PXDRAW_CONTAINER_NAME environment variable is not present");
+        }
+
+        private static string GetDefaultBoardName()
+        {
+            return Environment.GetEnvironmentVariable("PXDRAW_BOARD_NAME") ?? throw new InvalidOperationException("PXDRAW_BOARD_NAME environment variable is not present");
         }
     }
 }
