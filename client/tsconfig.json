@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "outDir": "../built/",
+        "outDir": "./built/",
         "allowJs": true,
         "sourceMap": true,
         "noImplicitAny": true,
@@ -9,10 +9,14 @@
         "allowUnreachableCode": false,
         "allowUnusedLabels": false,
         "module": "amd",
+        "moduleResolution": "node",
         "target": "es5",
-        "lib": ["es5", "es6", "dom"]
+        "lib": ["es5", "es6", "dom"],
     },
     "include": [
-        "./**/*"
+        "./src/**/*"
+    ],
+    "exclude": [
+        "node_modules"
     ]
 }

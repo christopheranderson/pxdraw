@@ -1,6 +1,9 @@
 /**
  * Canvas-related code
  */
+import { PixelUpdate, CanvasColor, Point2D } from "./main";
+import { DrawingBuffer } from "./drawingBuffer";
+
 interface CanvasParameters {
     onPixelUpdatesSubmitted: (updates: PixelUpdate[]) => void; // called when pixel updates submitted by user
 }
@@ -10,7 +13,7 @@ enum TouchState {
     MultiDown,
     Up
 }
-class Canvas {
+export class Canvas {
     public static readonly BOARD_WIDTH_PX = 1000;
     public static readonly BOARD_HEIGHT_PX = 1000;
     private static readonly ZOOM_MIN_SCALE = 1;
@@ -54,14 +57,14 @@ class Canvas {
 
     private scrollIntervalId: number;
 
-     // This array buffer will hold color data to be drawn to the canvas.
-     private buffer: ArrayBuffer;
-     // This view into the buffer is used to construct the PixelData object
-     // for drawing to the canvas
-     private readBuffer: Uint8ClampedArray;
-     // This view into the buffer is used to write.  Values written should be
-     // 32 bit colors stored as AGBR (rgba in reverse).
-     private writeBuffer: Uint32Array;
+    // This array buffer will hold color data to be drawn to the canvas.
+    private buffer: ArrayBuffer;
+    // This view into the buffer is used to construct the PixelData object
+    // for drawing to the canvas
+    private readBuffer: Uint8ClampedArray;
+    // This view into the buffer is used to write.  Values written should be
+    // 32 bit colors stored as AGBR (rgba in reverse).
+    private writeBuffer: Uint32Array;
 
 
     // private queuedUpdate: PixelUpdate[] = [];
@@ -147,9 +150,9 @@ class Canvas {
         var initialImageWidth = 500;
         var newImageHeight = 0;
 
-        var image_height:number, image_width:number;
+        var image_height: number, image_width: number;
 
-        var imageXPos:number, imageYPos:number;
+        var imageXPos: number, imageYPos: number;
 
         // load our large image
         var img: any;
@@ -226,7 +229,7 @@ class Canvas {
 
         if (this.isFreehandEnabled && this.touchState === TouchState.SingleDown) {
             const updates = this.drawingBuffer.penMove(position, this.selectedColorIndex());
-            $.each(updates, (index:number, update: PixelUpdate) => {
+            $.each(updates, (index: number, update: PixelUpdate) => {
                 this.paintToCanvas(update);
             });
         }
@@ -247,7 +250,7 @@ class Canvas {
             const t = (<TouchEvent>e).touches[0];
             position = this.getCanvasCoordinates(t.clientX, t.clientY);
 
-            switch(this.touchState) {
+            switch (this.touchState) {
                 case TouchState.Up: this.touchState = TouchState.SingleDown; break;
                 case TouchState.SingleDown:
                 case TouchState.MultiDown:
@@ -255,16 +258,16 @@ class Canvas {
                     break;
                 default: break;
             }
-         } else {
+        } else {
             console.error('Unknown event', e);
             return;
         }
 
         const updates = this.drawingBuffer.penDown(position, this.selectedColorIndex());
-        $.each(updates, (index:number, update: PixelUpdate) => {
+        $.each(updates, (index: number, update: PixelUpdate) => {
             this.paintToCanvas(update);
         });
-}
+    }
 
     private onMouseUp(e: MouseEvent | TouchEvent) {
         if (this.touchState === TouchState.SingleDown) {
@@ -288,7 +291,7 @@ class Canvas {
             }
 
             const updates = this.drawingBuffer.penUp(position, this.selectedColorIndex());
-            $.each(updates, (index:number, update: PixelUpdate) => {
+            $.each(updates, (index: number, update: PixelUpdate) => {
                 this.paintToCanvas(update);
             });
 
@@ -309,7 +312,7 @@ class Canvas {
             console.error('Unknown color', update.color);
             return;
         }
-        const imgData = this.context.createImageData(1,1);
+        const imgData = this.context.createImageData(1, 1);
         const d = imgData.data;
         d[0] = color.r;
         d[1] = color.g;
@@ -368,10 +371,10 @@ class Canvas {
         // For now, just draw it directly onto canvas
         let x = 0;
         let y = 0;
-        for (let i = 0; i<board.byteLength; i++) {
+        for (let i = 0; i < board.byteLength; i++) {
             const color = board[i];
             // this.paintPixel({ x:x, y:y }, color);
-            this.paintToBuffer({ x:x, y:y }, color);
+            this.paintToBuffer({ x: x, y: y }, color);
 
             if (++x >= Canvas.BOARD_WIDTH_PX) {
                 x = 0;
