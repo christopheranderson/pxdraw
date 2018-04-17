@@ -1,4 +1,6 @@
-/// <reference path="../node_modules/@aspnet/signalr/dist/esm/index.d.ts" />
+
+import {OnPixelUpdateData} from "./main";
+import * as signalR from "@aspnet/signalr";
 
 /**
  * Client that receives the updates
@@ -11,7 +13,7 @@
      onReceived: (data: OnPixelUpdateData) => void;
  }
 
- class UpdateClient {
+export class UpdateClient {
     private params: UpdateClientParameters;
     private connection: signalR.HubConnection;
 

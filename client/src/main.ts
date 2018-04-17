@@ -6,32 +6,36 @@
  * We use "board" for the actual representation of the board coming from the backend.
  *
  */
-interface Point2D {
+import { config } from "./config";
+import { Canvas } from "./canvas";
+import { UpdateClient } from "./updateClient";
+
+export interface Point2D {
     x: number;
     y: number;
 }
 
-interface CanvasColor {
+export interface CanvasColor {
     r: number;
     g: number;
     b: number;
     a: number;
 }
 
-interface PixelUpdate extends Point2D {
+export interface PixelUpdate extends Point2D {
     color: number;
 }
 
-interface FetchBoardResponseData {
+export interface FetchBoardResponseData {
     blob: ArrayBuffer; // the actual image (array of 4-bit integers)
     LSN: number; // corresponding LSN
 }
 
-interface OnPixelUpdateData extends PixelUpdate {
+export interface OnPixelUpdateData extends PixelUpdate {
     _lsn: number;
 }
 
-interface FetchMetadataResponseData {
+export interface FetchMetadataResponseData {
     loginEndpoint: string;
     getBoardEndpoint: string;
     updatePixelEndpoint: string;
@@ -112,10 +116,7 @@ class Main {
         return new Promise((resolve, reject) => {
             $.ajax({
                 type: 'GET',
-                url: 'http://localhost:7071/api/metadata',
-                beforeSend: function (request) {
-                    request.setRequestHeader('x-ms-client-principal-id', Main.LOCALHOST_CLIENT_PRINCIPAL_ID);
-                },
+                url: config.metadataEndpoint,
                 success: (data: FetchMetadataResponseData, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
                     console.log("Data: " + data + "\nStatus: " + status);
                     this.loginEndpoint = data.loginEndpoint;
@@ -174,7 +175,10 @@ class Main {
                 dataType: "json",
                 contentType: "application/json",
                 beforeSend: function (request) {
-                    request.setRequestHeader('x-ms-client-principal-id', Main.LOCALHOST_CLIENT_PRINCIPAL_ID);
+                    if(config.isLocal) {
+                        // locally, we spoof the header
+                        request.setRequestHeader('x-ms-client-principal-id', Main.LOCALHOST_CLIENT_PRINCIPAL_ID);
+                    }
                 },
                 data: JSON.stringify(updates, null, " "),
                 success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {

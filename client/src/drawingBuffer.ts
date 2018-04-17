@@ -1,7 +1,9 @@
 /**
  * Utility class that allows drawing arbitrary shapes and produces a set of de-duped pixel updates
  */
-class DrawingBuffer {
+import {PixelUpdate, CanvasColor, Point2D} from "./main";
+
+export class DrawingBuffer {
     private static readonly FREEHAND_PEN_SIZE_PX = 2; // Freehand drawing uses thicker pen
 
     private isFreehand: boolean;
