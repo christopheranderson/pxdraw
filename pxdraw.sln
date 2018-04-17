@@ -7,17 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PxDRAW.SignalR", "notificat
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pxdraw.api", "api\pxdraw.api.csproj", "{50DA16B5-6D1C-407D-97A0-5BA90046BD29}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pxdraw.updateprocessor", "updateprocessor\pxdraw.updateprocessor.csproj", "{0B5E3BD8-64DA-4B2C-8062-3A4498B48D89}"
+EndProject
 Global
-	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{50DA16B5-6D1C-407D-97A0-5BA90046BD29}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{50DA16B5-6D1C-407D-97A0-5BA90046BD29}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{50DA16B5-6D1C-407D-97A0-5BA90046BD29}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{50DA16B5-6D1C-407D-97A0-5BA90046BD29}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -27,6 +19,12 @@ Global
 		{5CD75329-D317-4B99-809D-4CACDF26B3BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5CD75329-D317-4B99-809D-4CACDF26B3BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5CD75329-D317-4B99-809D-4CACDF26B3BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50DA16B5-6D1C-407D-97A0-5BA90046BD29}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50DA16B5-6D1C-407D-97A0-5BA90046BD29}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B5E3BD8-64DA-4B2C-8062-3A4498B48D89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B5E3BD8-64DA-4B2C-8062-3A4498B48D89}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B5E3BD8-64DA-4B2C-8062-3A4498B48D89}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B5E3BD8-64DA-4B2C-8062-3A4498B48D89}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
