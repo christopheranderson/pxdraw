@@ -49,13 +49,13 @@ namespace pxdraw.updateprocessor
         public async static Task<HttpResponseMessage> ResetBoard([HttpTrigger(authLevel: AuthorizationLevel.Function)] HttpRequestMessage req, ILogger log)
         {
             log.LogInformation("Resetting board");
-            bool isRandom = req.Headers.Contains("x-pxdraw-random");
+            // bool isRandom = req.Headers.Contains("x-pxdraw-random");
 
             var bu = BlobClient.GetDefaultSingleton();
             var containerName = GetDefaultConatinerName();
             var boardName = GetDefaultBoardName();
 
-            Board board = Board.GenerateBoard(isRandom);
+            Board board = Board.GenerateBoardFromTshirt();
             await bu.UpdateBlob(containerName, boardName, board.Bitmap);
             return req.CreateResponse();
         }
