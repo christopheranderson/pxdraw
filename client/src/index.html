@@ -5,7 +5,15 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <link rel="stylesheet" href="node_modules/jquery-ui-dist/jquery-ui.min.css" type="text/css" charset="UTF-8" />
     <link rel="stylesheet" href="css/canvas.css" type="text/css" charset="UTF-8" />
+    <script type="text/javascript">
+        var appInsights = window.appInsights || function (a) {
+            function b(a) { c[a] = function () { var b = arguments; c.queue.push(function () { c[a].apply(c, b) }) } } var c = { config: a }, d = document, e = window; setTimeout(function () { var b = d.createElement("script"); b.src = a.url || "https://az416426.vo.msecnd.net/scripts/a/ai.0.js", d.getElementsByTagName("script")[0].parentNode.appendChild(b) }); try { c.cookie = d.cookie } catch (a) { } c.queue = []; for (var f = ["Event", "Exception", "Metric", "PageView", "Trace", "Dependency"]; f.length;)b("track" + f.pop()); if (b("setAuthenticatedUserContext"), b("clearAuthenticatedUserContext"), b("startTrackEvent"), b("stopTrackEvent"), b("startTrackPage"), b("stopTrackPage"), b("flush"), !a.disableExceptionTracking) { f = "onerror", b("_" + f); var g = e[f]; e[f] = function (a, b, d, e, h) { var i = g && g(a, b, d, e, h); return !0 !== i && c["_" + f](a, b, d, e, h), i } } return c
+        }({
+            instrumentationKey: "<%= appInsightsKey %>"
+        });
 
+        window.appInsights = appInsights, appInsights.queue && 0 === appInsights.queue.length && appInsights.trackPageView();
+    </script>
     <script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>
     <script type="text/javascript" src="node_modules/jquery-ui-dist/jquery-ui.min.js"></script>
     <script type="text/javascript" src="node_modules/knockout/build/output/knockout-latest.js"></script>
@@ -19,8 +27,11 @@
     <div class="header">
         <img src="img/CosmosDB_rgb_ui_darktheme.svg">
         <div class="text-container">
-            <div class="title">Azure Cosmos DB <strong>PxDRAW</strong></div>
-            <p class="description">Welcome to Azure Cosmos DB PxDRAW! PxDRAW is a collaborative project. Pick a color on the left and draw on the canvas, one pixel a time.</p>
+            <div class="title">Azure Cosmos DB
+                <strong>PxDRAW</strong>
+            </div>
+            <p class="description">Welcome to Azure Cosmos DB PxDRAW! PxDRAW is a collaborative project. Pick a color on the left and draw on the
+                canvas, one pixel a time.</p>
         </div>
         <div class="header-block-container">
             <div class="header-block-title">Draw pixel in</div>
@@ -28,7 +39,9 @@
         </div>
         <div class="header-block-container">
             <div class="header-block-title">Done drawing!</div>
-            <div class="header-block-main"><a href>Log out</a></div>
+            <div class="header-block-main">
+                <a href>Log out</a>
+            </div>
         </div>
     </div>
     <div class="main-area">
@@ -41,7 +54,8 @@
             <canvas id="canvas" width="1000" height="1000"></canvas>
             <div id="coordinates-container" data-bind="text: canvas.currentPositionStr, visible: canvas.currentPositionStr"></div>
             <div class="tweet-area">
-                <a href="https://twitter.com/intent/tweet?button_hashtag=LoveCosmosDB&ref_src=twsrc%5Etfw" class="twitter-hashtag-button" data-size="large" data-show-count="false">Tweet #LoveCosmosDB</a>
+                <a href="https://twitter.com/intent/tweet?button_hashtag=LoveCosmosDB&ref_src=twsrc%5Etfw" class="twitter-hashtag-button"
+                    data-size="large" data-show-count="false">Tweet #LoveCosmosDB</a>
                 <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
             </div>
         </div>
