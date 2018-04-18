@@ -41,14 +41,14 @@
 .palette-button {
     width: 25px;
     height: 25px;
-    margin: 4px;
+    margin: 9px;
     border: 1px solid black;
     opacity: 0.5;
 }
 
 .palette-button.selected {
     border: 3px solid #333333;
-    margin: 2px;
+    margin: 7px;
     opacity: 1;
 }
 
@@ -79,9 +79,10 @@
     right: 0px;
 }
 
-.timer-container {
+.header-block-container {
     margin: 10px;
     text-align: center;
+    color: white;
 }
 
 .coordinates-container {
@@ -95,4 +96,17 @@
     background-color: #002050;
     font-size: 14px;
     color: #ffffff;
+}
+
+.header-block-title {
+    font-size: 12px;
+}
+
+.header-block-main {
+    font-size: 24px;
+}
+
+.header-block-main a {
+    color: #cccccc;
+    text-decoration: none;
 }

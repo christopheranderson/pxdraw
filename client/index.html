@@ -20,9 +20,13 @@
             <div class="title">Azure Cosmos DB <strong>PxDRAW</strong></div>
             <p class="description">Welcome to Azure Cosmos DB PxDRAW! PxDRAW is a collaborative project. Pick a color on the left and draw on the canvas, one pixel a time.</p>
         </div>
-        <div class="timer-container">
-            <div>Draw pixel at</div>
-            <div>00:00</div>
+        <div class="header-block-container">
+            <div class="header-block-title">Draw pixel in</div>
+            <div class="header-block-main">00:00</div>
+        </div>
+        <div class="header-block-container">
+            <div class="header-block-title">Done drawing!</div>
+            <div class="header-block-main"><a href>Log out</a></div>
         </div>
     </div>
     <div class="main-area">
@@ -33,7 +37,7 @@
         </div>
         <div id="canvas-container">
             <canvas id="canvas" width="1000" height="1000"></canvas>
-            <div class="coordinates-container" data-bind="text: currentPositionStr"></div>
+            <div class="coordinates-container" data-bind="text: currentPositionStr, visible: currentPositionStr"></div>
             <div class="tweet-area">
                 <a href="https://twitter.com/intent/tweet?button_hashtag=LoveCosmosDB&ref_src=twsrc%5Etfw" class="twitter-hashtag-button" data-size="large" data-show-count="false">Tweet #LoveCosmosDB</a>
                 <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
