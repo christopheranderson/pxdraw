@@ -4,7 +4,6 @@
     font-family: Arial, Helvetica, sans-serif;
     display: flex;
     padding: 10px;
-    position: relative;
 }
 
 .header img {
@@ -15,6 +14,7 @@
     display: flex;
     flex-direction: column;
     margin-left: 20px;
+    flex-grow: 1;
 }
 
 .title {
@@ -32,15 +32,18 @@
 }
 
 .palette-container {
-    width: 80px;
+    width: 35px;
+    display: flex;
+    flex-direction: column;
+    align-content: center;
 }
 
 .palette-button {
-    width: 50px;
-    height: 50px;
-    margin: 10px;
+    width: 25px;
+    height: 25px;
+    margin: 9px;
     border: 1px solid black;
-    opacity: 0.3;
+    opacity: 0.5;
 }
 
 .palette-button.selected {
@@ -50,9 +53,11 @@
 }
 
 #canvas-container {
+    background-image: url("../img/background_patch.png");
+    background-repeat: repeat;
     margin-left: 10px;
-    width: 1000px;
-    height: 1000px;
+    flex-grow: 1;
+    height: calc(100vh - 120px);
     border: 1px solid black;
 }
 
@@ -70,6 +75,40 @@
 .tweet-area {
     margin: 10px;
     position: absolute;
-    top: 0px;
+    bottom: 0px;
     right: 0px;
+}
+
+#coordinates-container {
+    position: absolute;
+    text-align: center;
+    right: 0px;
+    top: 50px;
+    width: 70px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    background-color: #002050;
+    font-size: 14px;
+    color: #ffffff;
+    cursor: move;
+}
+
+.header-block-container {
+    margin: 10px 10px 0px 10px;
+    text-align: center;
+    color: white;
+}
+
+.header-block-title {
+    font-size: 12px;
+}
+
+.header-block-main {
+    margin-top: 5px;
+    font-size: 24px;
+}
+
+.header-block-main a {
+    color: #cccccc;
+    text-decoration: none;
 }

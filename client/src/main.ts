@@ -56,15 +56,17 @@ class Main {
     private updatePixelEndpoint: string;
     private websocketEndpoint: string;
 
+    private remainingTimeDisplay: KnockoutObservable<string>;
+
     public constructor() {
-
-    }
-
-    public async init(){
         this.canvas = new Canvas({
             onPixelUpdatesSubmitted: this.onPixelUpdatesFromUI.bind(this)
         });
 
+        this.remainingTimeDisplay = ko.observable('00:00');
+    }
+
+    public async init(){
         this.updateClient = new UpdateClient({
             onReceived: this.onPixelUpdateFromRemote.bind(this)
         });
@@ -196,5 +198,5 @@ class Main {
 $(document).ready(async () => {
     const main = new Main();
     await main.init();
-    ko.applyBindings(main.canvas);
+    ko.applyBindings(main);
 });
