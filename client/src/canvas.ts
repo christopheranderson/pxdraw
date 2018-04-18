@@ -128,7 +128,7 @@ export class Canvas {
 
 
         // TODO REMOVE THIS
-        this.loadDummyImage();
+        // this.loadDummyImage();
     }
 
     private centerCanvas() {

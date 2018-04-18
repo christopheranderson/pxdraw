@@ -26,11 +26,6 @@ export interface PixelUpdate extends Point2D {
     color: number;
 }
 
-export interface FetchBoardResponseData {
-    blob: ArrayBuffer; // the actual image (array of 4-bit integers)
-    LSN: number; // corresponding LSN
-}
-
 export interface OnPixelUpdateData extends PixelUpdate {
     _lsn: number;
 }
@@ -76,8 +71,8 @@ class Main {
         this.fetchBoard();
     }
 
-    private processFetchBoardResponse(data: FetchBoardResponseData) {
-        const board8Uint = Main.unpackBoardBlob(new Uint8Array(data.blob));
+    private processFetchBoardResponse(data: ArrayBuffer) {
+        const board8Uint = Main.unpackBoardBlob(new Uint8Array(data));
         this.canvas.renderBoard(board8Uint);
     }
 
@@ -120,7 +115,6 @@ class Main {
                 type: 'GET',
                 url: config.metadataEndpoint,
                 success: (data: FetchMetadataResponseData, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
-                    console.log("Data: " + data + "\nStatus: " + status);
                     this.loginEndpoint = data.loginEndpoint;
                     this.getBoardEndpoint = data.getBoardEndpoint;
                     this.updatePixelEndpoint = data.updatePixelEndpoint;
@@ -140,18 +134,17 @@ class Main {
      */
     private fetchBoard() {
         /* Uncomment this to fetch the real board
-         *
-
+         */
         $.get(this.getBoardEndpoint,
-            (data: FetchBoardResponseData) => {
-                alert("Data: " + data + "\nStatus: " + status);
+            (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
+                if (!data) {
+                    console.error('Fetching board returned no data');
+                }
                 this.processFetchBoardResponse(data);
             });
 
-        */
-
         /* TODO: testing code: generate fake board for now */
-        setTimeout(() => {
+        // setTimeout(() => {
             // Randomize
             // const buffer = new Uint8Array(Canvas.BOARD_WIDTH_PX * Canvas.BOARD_HEIGHT_PX / 2);
             // for (let i = 0; i < buffer.byteLength; i++) {
@@ -160,11 +153,8 @@ class Main {
             //     buffer[i] = 3; //color1 + (color2 << 4); // Always same color alternating to check endianness
             // }
 
-            // this.processFetchBoardResponse({
-            //     blob: buffer.buffer,
-            //     LSN: 0
-            // });
-        }, 0);
+            // this.processFetchBoardResponse(buffer.buffer);
+        // }, 0);
         /* ******************************* */
 
     }
@@ -184,6 +174,7 @@ class Main {
                 },
                 data: JSON.stringify(updates, null, " "),
                 success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
+                    // TODO Check response code to update timer
                     console.log("Data: " + data + "\nStatus: " + textStatus);
                 },
                 error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
