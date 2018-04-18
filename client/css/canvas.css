@@ -79,7 +79,7 @@
     right: 0px;
 }
 
-.coordinates-container {
+#coordinates-container {
     position: absolute;
     text-align: center;
     right: 0px;
@@ -90,6 +90,7 @@
     background-color: #002050;
     font-size: 14px;
     color: #ffffff;
+    cursor: move;
 }
 
 .header-block-container {

@@ -107,6 +107,9 @@ export class Canvas {
         this.panZoomElement.on('panzoomchange', (e: any, panzoom: any, transform: number[]) => {
             this.zoomScale = transform[0];
         });
+
+        $('#coordinates-container').draggable({ axis: 'y', containment: "#canvas-container", scroll: false });
+
         this.currentPositionStr = ko.observable('');
 
         this.availableColors = ko.observableArray(Canvas.COLOR_PALETTE_16);
