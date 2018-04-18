@@ -26,7 +26,6 @@ export class UpdateClient {
      * @param url
      */
     public init(url: string): JQueryPromise<any> {
-        // this.connection = new signalR.HubConnection('https://signalr21.azurewebsites.net/hubs/notifications');
         const options: signalR.IHubConnectionOptions = {
             logger: new signalR.ConsoleLogger(signalR.LogLevel.Trace)
         }
@@ -48,6 +47,7 @@ export class UpdateClient {
                     return;
                 }
 
+                console.log(`Received ${docs.length} updates`);
                 for(const doc of docs)
                 {
                     this.params.onReceived(doc);
@@ -60,9 +60,6 @@ export class UpdateClient {
 
         });
         return <any>this.connection.start();
-
-        // TODO generate fake updates for now
-        // setInterval(this.generateRandomUpdate.bind(this), 1);
     }
 
     /**
@@ -71,18 +68,5 @@ export class UpdateClient {
      */
     private static isOnPixelUpdateData(object: any): boolean {
         return 'x' in object && 'y' in object && 'color' in object && '_lsn' in object;
-    }
-
-    private generateRandomUpdate() {
-        const x = Math.floor(Math.random() * 100) + 450;
-        const y = Math.floor(Math.random() * 100) + 450;
-        const color = Math.floor(Math.random() * 16);
-        const update:OnPixelUpdateData = {
-            x: x,
-            y: y,
-            color: color,
-            _lsn: 0
-        }
-        this.params.onReceived(update);
     }
  }
