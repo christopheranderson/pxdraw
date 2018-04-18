@@ -29,25 +29,31 @@
                 <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
             </div>
         </div>
+        <div class="coordinates-container">
+            <div>Current Px</div>
+            <div data-bind="text: currentPositionStr"></div>
+        </div>
+        <div class="timer-container">
+            <div>Draw pixel in</div>
+            <div>00:00</div>
+        </div>
     </div>
     <div class="main-area">
         <div class="palette-container">
             <div data-bind="foreach: availableColors">
                 <div class="palette-button" data-bind="style: { backgroundColor: $parent.toRGBA($index()) }, css: { selected: $parent.selectedColorIndex() === $index() }, click: $parent.selectColorIndex.bind($parent, $index())"></div>
             </div>
-
-            <div data-bind="text: currentPositionStr"></div>
         </div>
         <div id="canvas-container">
             <canvas id="canvas" width="1000" height="1000"></canvas>
         </div>
     </div>
-    <div>
+    <!-- <div>
         <button data-bind="event:{ mousedown:scrollUpStart, mouseup:scrollStop, touchstart:scrollUpStart, touchend:scrollStop }">Move Up</button>
         <button data-bind="event:{ mousedown:scrollDownStart, mouseup:scrollStop, touchstart:scrollDownStart, touchend:scrollStop }">Move Down</button>
         <button data-bind="event:{ mousedown:scrollLeftStart, mouseup:scrollStop, touchstart:scrollLeftStart, touchend:scrollStop }">Move Left</button>
         <button data-bind="event:{ mousedown:scrollRightStart, mouseup:scrollStop, touchstart:scrollRightStart, touchend:scrollStop }">Move Right</button>
-    </div>
+    </div> -->
 
 </body>
 
