@@ -58,9 +58,6 @@ export class Canvas {
     private lastMouseDownPosition: Point2D;
     private hasMouseMoved: boolean;
 
-
-    private scrollIntervalId: number;
-
     // This array buffer will hold color data to be drawn to the canvas.
     private buffer: ArrayBuffer;
     // This view into the buffer is used to construct the PixelData object
@@ -424,29 +421,5 @@ export class Canvas {
         // Now paint over canvas
         const imageData = new ImageData(this.readBuffer, Canvas.BOARD_WIDTH_PX, Canvas.BOARD_HEIGHT_PX);
         this.context.putImageData(imageData, 0, 0);
-    }
-
-    private scrollUpStart() {
-        this.scrollIntervalId = setInterval(() => {
-            this.panZoomElement.panzoom('pan', 0, 100, { relative: true });
-        }, 200);
-    }
-    private scrollDownStart() {
-        this.scrollIntervalId = setInterval(() => {
-            this.panZoomElement.panzoom('pan', 0, -100, { relative: true });
-        }, 200);
-    }
-    private scrollLeftStart() {
-        this.scrollIntervalId = setInterval(() => {
-            this.panZoomElement.panzoom('pan', 100, 0, { relative: true });
-        }, 200);
-    }
-    private scrollRightStart() {
-        this.scrollIntervalId = setInterval(() => {
-            this.panZoomElement.panzoom('pan', -100, 0, { relative: true });
-        }, 200);
-    }
-    private scrollStop() {
-        clearInterval(this.scrollIntervalId);
     }
 }
