@@ -16,8 +16,9 @@ enum TouchState {
 export class Canvas {
     public static readonly BOARD_WIDTH_PX = 1000;
     public static readonly BOARD_HEIGHT_PX = 1000;
-    private static readonly ZOOM_MIN_SCALE = 1;
+    private static readonly ZOOM_MIN_SCALE = 0.1;
     private static readonly ZOOM_MAX_SCALE = 40;
+    private static readonly UNSTABLE_ZOOM = 0.5;
 
     // 16 colors according to this: http://www.december.com/html/spec/color16codes.html
     private static readonly COLOR_PALETTE_16: CanvasColor[] = [
@@ -54,8 +55,8 @@ export class Canvas {
     private drawingBuffer: DrawingBuffer;
     private touchState: TouchState;
     private updateScrollbarTimoutId: number = 0;
-
-    private scrollIntervalId: number;
+    private lastMouseDownPosition: Point2D;
+    private hasMouseMoved: boolean;
 
     // This array buffer will hold color data to be drawn to the canvas.
     private buffer: ArrayBuffer;
@@ -88,10 +89,10 @@ export class Canvas {
             cursor: 'default',
             which: 3,
             // panOnlyWhenZoomed: true,
-            disablePan: false,
+            // disablePan: false,
             minScale: Canvas.ZOOM_MIN_SCALE,
             maxScale: Canvas.ZOOM_MAX_SCALE,
-            contain: 'automatic'
+            // contain: 'automatic'
         });
         this.panZoomElement.parent().on('mousewheel.focal', (e: any) => {
             e.preventDefault();
@@ -106,6 +107,9 @@ export class Canvas {
         this.panZoomElement.on('panzoomchange', (e: any, panzoom: any, transform: number[]) => {
             this.zoomScale = transform[0];
         });
+
+        $('#coordinates-container').draggable({ axis: 'y', containment: "#canvas-container", scroll: false });
+
         this.currentPositionStr = ko.observable('');
 
         this.availableColors = ko.observableArray(Canvas.COLOR_PALETTE_16);
@@ -117,9 +121,33 @@ export class Canvas {
 
         this.drawingBuffer = new DrawingBuffer(this.isFreehandEnabled);
         this.touchState = TouchState.Up;
+        this.lastMouseDownPosition = null;
+        this.hasMouseMoved = false;
+
+        this.centerCanvas();
+
 
         // TODO REMOVE THIS
         this.loadDummyImage();
+    }
+
+    private centerCanvas() {
+        const BORDER_PX = 1;
+        const containerWidth = this.canvasContainerElement.width();
+        const containerHeight = this.canvasContainerElement.height();
+        const containerPos = this.canvasContainerElement.position();
+        let zoomX =  (containerWidth - BORDER_PX) / Canvas.BOARD_WIDTH_PX;
+        let zoomY =  (containerHeight - BORDER_PX) / Canvas.BOARD_HEIGHT_PX;
+        const zoom = Math.min(zoomX, zoomY);
+
+        let panX = (containerWidth - (Canvas.BOARD_WIDTH_PX *  zoom)) / 2;
+        let panY = (containerHeight - (Canvas.BOARD_HEIGHT_PX * zoom)) / 2;
+        this.panZoomElement.panzoom('zoom', zoom, {
+            animate: false,
+            focal: { clientX: containerPos.left, clientY: containerPos.top }
+        });
+        this.panZoomElement.panzoom('pan', panX, panY, { relative: true });
+        this.panZoomElement.panzoom('option', 'minScale', zoom);
     }
 
     private selectColorIndex(index: number) {
@@ -135,8 +163,8 @@ export class Canvas {
      * For testing make sure something's there
      */
     private loadDummyImage() {
-        // this.context.fillStyle = "white";
-        // this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.context.fillStyle = "white";
+        this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // get the size of our canvas
         var canvas_width = this.canvas.width,
@@ -202,6 +230,7 @@ export class Canvas {
     }
 
     private onMouseMove(e: MouseEvent | TouchEvent) {
+        this.hasMouseMoved = true;
         let position;
         if (e instanceof MouseEvent) {
             if (e.button !== 0) {
@@ -225,19 +254,29 @@ export class Canvas {
             return;
         }
 
-        this.currentPositionStr(`(${position.x + 1}, ${position.y + 1})`);
+        this.currentPositionStr(`${position.x + 1}, ${position.y + 1}`);
 
         if (this.isFreehandEnabled && this.touchState === TouchState.SingleDown) {
             const updates = this.drawingBuffer.penMove(position, this.selectedColorIndex());
             $.each(updates, (index: number, update: PixelUpdate) => {
                 this.paintToCanvas(update);
             });
+        } else {
+            if (this.touchState === TouchState.SingleDown) {
+                if (this.zoomScale < Canvas.UNSTABLE_ZOOM) {
+                    // Smaller too low, panning to jittery and position diverges. Disable panning.
+                    return;
+                }
+                const dx = position.x - this.lastMouseDownPosition.x;
+                const dy = position.y - this.lastMouseDownPosition.y;
+                this.panZoomElement.panzoom('pan', dx, dy, { relative: true });
+            }
         }
     }
 
     private onMouseDown(e: MouseEvent | TouchEvent) {
+        this.hasMouseMoved = false;
         let position;
-
         if (e instanceof MouseEvent) {
             if (e.button !== 0) {
                 // Ignore all but left button down
@@ -262,6 +301,8 @@ export class Canvas {
             console.error('Unknown event', e);
             return;
         }
+
+        this.lastMouseDownPosition = position;
 
         const updates = this.drawingBuffer.penDown(position, this.selectedColorIndex());
         $.each(updates, (index: number, update: PixelUpdate) => {
@@ -291,19 +332,17 @@ export class Canvas {
             }
 
             const updates = this.drawingBuffer.penUp(position, this.selectedColorIndex());
-            $.each(updates, (index: number, update: PixelUpdate) => {
-                this.paintToCanvas(update);
-            });
 
-            this.flushUpdates();
+            if (!this.hasMouseMoved) {
+                $.each(updates, (index: number, update: PixelUpdate) => {
+                    this.paintToCanvas(update);
+                });
+                this.params.onPixelUpdatesSubmitted(this.drawingBuffer.getAllUpdates());
+            }
+            this.drawingBuffer.reset();
         }
 
         this.touchState = TouchState.Up;
-    }
-
-    private flushUpdates() {
-        this.params.onPixelUpdatesSubmitted(this.drawingBuffer.getAllUpdates());
-        this.drawingBuffer.reset();
     }
 
     private paintToCanvas(update: PixelUpdate) {
@@ -385,29 +424,5 @@ export class Canvas {
         // Now paint over canvas
         const imageData = new ImageData(this.readBuffer, Canvas.BOARD_WIDTH_PX, Canvas.BOARD_HEIGHT_PX);
         this.context.putImageData(imageData, 0, 0);
-    }
-
-    private scrollUpStart() {
-        this.scrollIntervalId = setInterval(() => {
-            this.panZoomElement.panzoom('pan', 0, 100, { relative: true });
-        }, 200);
-    }
-    private scrollDownStart() {
-        this.scrollIntervalId = setInterval(() => {
-            this.panZoomElement.panzoom('pan', 0, -100, { relative: true });
-        }, 200);
-    }
-    private scrollLeftStart() {
-        this.scrollIntervalId = setInterval(() => {
-            this.panZoomElement.panzoom('pan', 100, 0, { relative: true });
-        }, 200);
-    }
-    private scrollRightStart() {
-        this.scrollIntervalId = setInterval(() => {
-            this.panZoomElement.panzoom('pan', -100, 0, { relative: true });
-        }, 200);
-    }
-    private scrollStop() {
-        clearInterval(this.scrollIntervalId);
     }
 }

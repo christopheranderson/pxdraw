@@ -2,7 +2,8 @@
     https://github.com/timmywil/jquery.panzoom
  */
 
- interface PanzoomConfig {
+interface PanzoomOption {
+    increment?: number;
     cursor?: string;
     which?: number;
     panOnlyWhenZoomed?: boolean;
@@ -10,14 +11,14 @@
     minScale?: number;
     maxScale?: number;
     contain?: string;
- }
+}
 
- interface Panzoom {
+interface Panzoom {
     parent: () => JQuery;
-    panzoom: (eventName:string, ...args: any[]) => void;
-    on: (eventName: string, handler:(e: any, panzoom: any, transform: number[])=>void ) => void;
- }
+    panzoom: (eventName: string, ...args: any[]) => void;
+    on: (eventName: string, handler: (e: any, panzoom: any, transform: number[]) => void) => void;
+}
 
- interface JQuery<TElement extends Node = HTMLElement> extends Iterable<TElement> {
-    panzoom: (config: PanzoomConfig) => Panzoom;
+interface JQuery<TElement extends Node = HTMLElement> extends Iterable<TElement> {
+    panzoom: (config: PanzoomOption) => Panzoom;
 }
