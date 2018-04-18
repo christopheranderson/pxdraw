@@ -176,6 +176,7 @@ class Main {
      */
     private replayAndCleanupUpdates(startLsn: number) {
         const validUpdates:OnPixelUpdateData[] = [];
+        console.log(`Replaying ${this.receivedUpdates.length} received updates`);
         for (let i=0; i<this.receivedUpdates.length; i++) {
             const update = this.receivedUpdates[i];
             if (startLsn <= update._lsn) {
