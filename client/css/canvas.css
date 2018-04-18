@@ -79,18 +79,12 @@
     right: 0px;
 }
 
-.header-block-container {
-    margin: 10px;
-    text-align: center;
-    color: white;
-}
-
 .coordinates-container {
     position: absolute;
     text-align: center;
     right: 0px;
-    top: 100px;
-    width: 90px;
+    top: 50px;
+    width: 70px;
     padding-top: 6px;
     padding-bottom: 6px;
     background-color: #002050;
@@ -98,11 +92,18 @@
     color: #ffffff;
 }
 
+.header-block-container {
+    margin: 10px 10px 0px 10px;
+    text-align: center;
+    color: white;
+}
+
 .header-block-title {
     font-size: 12px;
 }
 
 .header-block-main {
+    margin-top: 5px;
     font-size: 24px;
 }
 
