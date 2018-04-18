@@ -10,6 +10,8 @@ import { config } from "./config";
 import { Canvas } from "./canvas";
 import { UpdateClient } from "./updateClient";
 
+const BATCH_SIZE = 300;
+
 export interface Point2D {
     x: number;
     y: number;
@@ -98,7 +100,9 @@ class Main {
      * @param updates
      */
     private onPixelUpdatesFromUI(updates: PixelUpdate[]) {
-        this.submitPixelUpdates(updates);
+        this.submitPixelUpdates(updates).catch((err) => {
+            console.error(err)
+        });
     }
 
     /**
@@ -183,29 +187,35 @@ class Main {
     }
 
     private async submitPixelUpdates(updates: PixelUpdate[]) {
-        return new Promise((resolve, reject) => {
-            $.ajax({
-                type: 'POST',
-                url: this.updatePixelEndpoint,
-                dataType: "json",
-                contentType: "application/json",
-                beforeSend: function (request) {
-                    if(config.isLocal) {
-                        // locally, we spoof the header
-                        request.setRequestHeader('x-ms-client-principal-id', Main.LOCALHOST_CLIENT_PRINCIPAL_ID);
+        const numberOfBatches = updates.length / BATCH_SIZE;
+        const promises = [];
+        for(let i = 0; i < numberOfBatches; i++)
+        {
+            const data = JSON.stringify(updates.slice(i*BATCH_SIZE, (i+1)*BATCH_SIZE));
+            promises.push(new Promise((resolve, reject) => {
+                $.ajax({
+                    type: 'POST',
+                    url: this.updatePixelEndpoint,
+                    dataType: "json",
+                    contentType: "application/json",
+                    beforeSend: function (request) {
+                        if(config.isLocal) {
+                            // locally, we spoof the header
+                            request.setRequestHeader('x-ms-client-principal-id', Main.LOCALHOST_CLIENT_PRINCIPAL_ID);
+                        }
+                    },
+                    data,
+                    success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
+                        console.log("Data: " + data + "\nStatus: " + textStatus);
+                    },
+                    error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
+                        console.error(`Failed to submit pixel update:${errorThrown}`);
+                        reject(errorThrown);
                     }
-                },
-                data: JSON.stringify(updates, null, " "),
-                success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
-                    // TODO Check response code to update timer
-                    console.log("Data: " + data + "\nStatus: " + textStatus);
-                },
-                error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
-                    console.error(`Failed to submit pixel update:${errorThrown}`);
-                    reject(errorThrown);
-                }
-            });
-        });
+                });
+            }));
+        }
+        return Promise.all(promises);
     }
 }
 

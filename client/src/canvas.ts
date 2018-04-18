@@ -333,7 +333,7 @@ export class Canvas {
 
             const updates = this.drawingBuffer.penUp(position, this.selectedColorIndex());
 
-            if (!this.hasMouseMoved) {
+            if ((!this.isFreehandEnabled && !this.hasMouseMoved) || this.isFreehandEnabled) {
                 $.each(updates, (index: number, update: PixelUpdate) => {
                     this.paintToCanvas(update);
                 });
