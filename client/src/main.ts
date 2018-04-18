@@ -28,11 +28,6 @@ export interface PixelUpdate extends Point2D {
     color: number;
 }
 
-export interface FetchBoardResponseData {
-    blob: ArrayBuffer; // the actual image (array of 4-bit integers)
-    LSN: number; // corresponding LSN
-}
-
 export interface OnPixelUpdateData extends PixelUpdate {
     _lsn: number;
 }
@@ -44,8 +39,14 @@ export interface FetchMetadataResponseData {
     websocketEndpoint: string;
 }
 
+export interface FetchBoardData {
+    board: ArrayBuffer;
+    lsn: number;
+}
+
 class Main {
     private static readonly LOCALHOST_CLIENT_PRINCIPAL_ID = 'PrincicalId';
+    private static readonly REFRESH_BOARD_DELAY_MS = 30000;
 
     // state
     public canvas: Canvas;
@@ -74,12 +75,18 @@ class Main {
         });
 
         await this.fetchMetadata();
+        // this.getBoardEndpoint = 'https://pxdrawbuild18dev.blob.core.windows.net/dev/board1';
+        // this.websocketEndpoint = 'https://pxdraw-build18-notifcations.azurewebsites.net/hubs/notifications';
+
         this.updateClient.init(this.websocketEndpoint);
-        this.fetchBoard();
+
+        // Periodic board update
+        this.updateBoard();
+        setInterval(this.updateBoard.bind(this), Main.REFRESH_BOARD_DELAY_MS);
     }
 
-    private processFetchBoardResponse(data: FetchBoardResponseData) {
-        const board8Uint = Main.unpackBoardBlob(new Uint8Array(data.blob));
+    private processFetchBoardResponse(data: ArrayBuffer) {
+        const board8Uint = Main.unpackBoardBlob(new Uint8Array(data));
         this.canvas.renderBoard(board8Uint);
     }
 
@@ -115,16 +122,12 @@ class Main {
         return result;
     }
 
-    /**
-     * TODO: return proper promises and fetch board outside
-     */
     private async fetchMetadata() {
         return new Promise((resolve, reject) => {
             $.ajax({
                 type: 'GET',
                 url: config.metadataEndpoint,
                 success: (data: FetchMetadataResponseData, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
-                    console.log("Data: " + data + "\nStatus: " + status);
                     this.loginEndpoint = data.loginEndpoint;
                     this.getBoardEndpoint = data.getBoardEndpoint;
                     this.updatePixelEndpoint = data.updatePixelEndpoint;
@@ -139,38 +142,49 @@ class Main {
         });
     }
 
+    private async fetchBoard(): Promise<{}> {
+        // TODO Get LSN from board
+        const currentLSN = this.receivedUpdates && this.receivedUpdates.length > 0 ?
+            this.receivedUpdates[this.receivedUpdates.length - 1] : 0;
+
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', this.getBoardEndpoint, true);
+            xhr.responseType = 'arraybuffer';
+            xhr.addEventListener('load', function () {
+                if (xhr.status === 200) {
+                    if (!xhr.response) {
+                        console.error('Fetching board returned no data');
+                    }
+                    resolve({ board: xhr.response, lsn: currentLSN });
+                }
+            })
+            xhr.send();
+        });
+    }
+
+    private updateBoard() {
+        this.fetchBoard().then((result: FetchBoardData) => {
+            this.processFetchBoardResponse(result.board);
+            this.replayAndCleanupUpdates(result.lsn);
+        });
+    }
+
     /**
-     * TODO: return proper promise
+     * Cull obsolete lsn's
+     * @param startLsn
      */
-    private fetchBoard() {
-        /* Uncomment this to fetch the real board
-         *
-
-        $.get(this.getBoardEndpoint,
-            (data: FetchBoardResponseData) => {
-                alert("Data: " + data + "\nStatus: " + status);
-                this.processFetchBoardResponse(data);
-            });
-
-        */
-
-        /* TODO: testing code: generate fake board for now */
-        setTimeout(() => {
-            // Randomize
-            // const buffer = new Uint8Array(Canvas.BOARD_WIDTH_PX * Canvas.BOARD_HEIGHT_PX / 2);
-            // for (let i = 0; i < buffer.byteLength; i++) {
-            //     const color1 = Math.floor(Math.random() * 15);
-            //     const color2 = 15;
-            //     buffer[i] = 3; //color1 + (color2 << 4); // Always same color alternating to check endianness
-            // }
-
-            // this.processFetchBoardResponse({
-            //     blob: buffer.buffer,
-            //     LSN: 0
-            // });
-        }, 0);
-        /* ******************************* */
-
+    private replayAndCleanupUpdates(startLsn: number) {
+        const validUpdates:OnPixelUpdateData[] = [];
+        console.log(`Replaying ${this.receivedUpdates.length} received updates`);
+        for (let i=0; i<this.receivedUpdates.length; i++) {
+            const update = this.receivedUpdates[i];
+            if (startLsn <= update._lsn) {
+                validUpdates.push(update);
+                this.canvas.queuePixelUpdate(update);
+            }
+        }
+        this.receivedUpdates = validUpdates;
     }
 
     private async submitPixelUpdates(updates: PixelUpdate[]) {
