@@ -39,10 +39,8 @@
         </div>
     </div>
     <div class="main-area">
-        <div class="palette-container">
-            <div data-bind="foreach: availableColors">
-                <div class="palette-button" data-bind="style: { backgroundColor: $parent.toRGBA($index()) }, css: { selected: $parent.selectedColorIndex() === $index() }, click: $parent.selectColorIndex.bind($parent, $index())"></div>
-            </div>
+        <div class="palette-container" data-bind="foreach: availableColors">
+            <div class="palette-button" data-bind="style: { backgroundColor: $parent.toRGBA($index()) }, css: { selected: $parent.selectedColorIndex() === $index() }, click: $parent.selectColorIndex.bind($parent, $index())"></div>
         </div>
         <div id="canvas-container">
             <canvas id="canvas" width="1000" height="1000"></canvas>

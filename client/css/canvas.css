@@ -33,26 +33,29 @@
 
 .palette-container {
     width: 35px;
+    display: flex;
+    flex-direction: column;
+    align-content: center;
 }
 
 .palette-button {
     width: 25px;
     height: 25px;
-    margin: 10px;
+    margin: 4px;
     border: 1px solid black;
     opacity: 0.3;
 }
 
 .palette-button.selected {
     border: 3px solid #333333;
-    margin: 7px;
+    margin: 2px;
     opacity: 1;
 }
 
 #canvas-container {
     background-color: antiquewhite;
     margin-left: 10px;
-    width: calc(100vw - 35px);
+    flex-grow: 1;
     height: calc(100vh - 120px);
     border: 1px solid black;
 }
