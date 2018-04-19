@@ -180,7 +180,7 @@ class Main {
         clearTimeout(this.timerId);
 
         const remainingMs = this.getRemainingMsBeforeDraw();
-        if (remainingMs <= 0) {
+        if (remainingMs <= 0 || this.isAdmin) {
             this.enableDraw(true);
             this.remainingTimeDisplay('Now!');
         } else {
