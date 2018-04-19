@@ -1,3 +1,7 @@
+body {
+    margin: 0;
+}
+
 .header {
     background-color: #002050;
     color: white;
@@ -33,7 +37,6 @@
 
 .main-area {
     display: flex;
-    margin-top: 10px;
 }
 
 .palette-container {
@@ -62,8 +65,8 @@
     background-repeat: repeat;
     margin-left: 10px;
     flex-grow: 1;
-    height: calc(100vh - 120px);
-    border: 1px solid black;
+    height: calc(100vh - 85px);
+    border-left: 1px solid black;
 }
 
 #canvas {
@@ -96,6 +99,8 @@
     font-size: 14px;
     color: #ffffff;
     cursor: move;
+    
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 .header-block-container {
