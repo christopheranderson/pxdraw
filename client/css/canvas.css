@@ -10,10 +10,7 @@
     max-height: 55px;
 }
 
-.hidden {
-    display: none;
-}
-
+.highlight,
 #pxdraw-login {
     color: #b8d532;
 }
@@ -83,15 +80,15 @@
 .tweet-area {
     margin: 10px;
     position: absolute;
-    bottom: 0px;
+    top: 0px;
     right: 0px;
 }
 
 #coordinates-container {
     position: absolute;
     text-align: center;
-    right: 0px;
-    top: 50px;
+    left: 0px;
+    top: 10px;
     width: 70px;
     padding-top: 6px;
     padding-bottom: 6px;
@@ -119,4 +116,9 @@
 .header-block-main a {
     color: #cccccc;
     text-decoration: none;
+}
+
+.palette-container input {
+    position: absolute;
+    bottom: 0px;
 }

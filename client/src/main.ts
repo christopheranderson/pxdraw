@@ -7,7 +7,7 @@
  *
  */
 import { config } from "./config";
-import { Canvas } from "./canvas";
+import { Canvas, DrawModes } from "./canvas";
 import { UpdateClient } from "./updateClient";
 import { User } from "./user";
 
@@ -50,13 +50,15 @@ export interface FetchBoardData {
 class Main {
     private static readonly LOCALHOST_CLIENT_PRINCIPAL_ID = 'PrincicalId';
     private static readonly REFRESH_BOARD_DELAY_MS = 30000;
+    private static readonly DRAW_DELAY_S = 30;
+    private static readonly TIME_UPDATE_MS = 1000; // Update every second
 
     // state
     public canvas: Canvas;
     private receivedUpdates: OnPixelUpdateData[] = []; // Assume for now they should be ordered by LSN asc
+    private nextUpdateTime: Date;
 
     private updateClient: UpdateClient;
-
     private user: User;
 
     private loginEndpoint: string;
@@ -66,14 +68,35 @@ class Main {
     private userEndpoint: string;
     private logoutEndpoint: string;
 
+    // UI
+    private loginUrl: KnockoutObservable<string>;
+    private logoutUrl: KnockoutObservable<string>;
+    private isLoggedIn: KnockoutObservable<boolean>;
+    private isAdmin: KnockoutObservable<boolean>;
+    private isFreehandDrawing: KnockoutObservable<boolean>;
+    private timerId: number;
     private remainingTimeDisplay: KnockoutObservable<string>;
+    private isNow: KnockoutObservable<boolean>;
 
     public constructor() {
         this.canvas = new Canvas({
             onPixelUpdatesSubmitted: this.onPixelUpdatesFromUI.bind(this)
         });
 
-        this.remainingTimeDisplay = ko.observable('00:00');
+        this.isNow = ko.observable(false);
+        this.remainingTimeDisplay = ko.observable(null);
+        this.remainingTimeDisplay.subscribe(() => {
+            this.isNow(this.getRemainingMsBeforeDraw() <= 0);
+        });
+        this.loginUrl = ko.observable(null);
+        this.logoutUrl = ko.observable(null);
+        this.isLoggedIn = ko.observable(false);
+        this.isAdmin = ko.observable(false);
+        this.isFreehandDrawing = ko.observable(this.canvas.drawMode() === DrawModes.Freehand);
+        this.isFreehandDrawing.subscribe((newValue: boolean) => {
+            this.canvas.drawMode(newValue? DrawModes.Freehand:DrawModes.Pixel);
+        });
+        this.timerId = 0;
     }
 
     public async init(){
@@ -82,13 +105,32 @@ class Main {
         });
 
         await this.fetchMetadata();
+
+        // TODO Remove test code
         // this.getBoardEndpoint = 'https://pxdrawbuild18dev.blob.core.windows.net/dev/board1';
         // this.websocketEndpoint = 'https://pxdraw-build18-notifcations.azurewebsites.net/hubs/notifications';
+        // this.userEndpoint = 'http://blah';
+        // this.loginEndpoint = 'http://login';
+        // this.logoutEndpoint = 'http://logout';
 
-        this.updateLoginLogout();
+        this.loginUrl(this.loginEndpoint);
+        this.logoutUrl(this.logoutEndpoint);
         try {
             this.user = await User.getUser(this.userEndpoint);
-            this.onUserIsLoggedIn();
+
+            // TODO remove test code
+            // this.user = {
+            //     isAdmin: false,
+            //     lastUpdate: new Date(new Date().getTime() - 3000),
+            //     id: 'userid'
+            // }
+
+            this.isLoggedIn(true);
+            this.isAdmin(this.user.isAdmin);
+            this.enableDraw(true);
+            this.isFreehandDrawing(this.user.isAdmin);
+            this.updateNextUpdateTime(this.user.lastUpdate);
+
         } catch (e) {
             console.log("User is not logged in");
         }
@@ -100,26 +142,28 @@ class Main {
         setInterval(this.updateBoard.bind(this), Main.REFRESH_BOARD_DELAY_MS);
     }
 
-    private updateLoginLogout()
-    {
-        $("#pxdraw-login").prop("href",this.loginEndpoint);
-        $("#pxdraw-logout").prop("href",this.logoutEndpoint);
-    }
-
-    private onUserIsLoggedIn()
-    {
-        $("#pxdraw-login-block").addClass("hidden");
-        $("#pxdraw-logout-block").removeClass("hidden");
-    }
-
     private processFetchBoardResponse(data: ArrayBuffer) {
+        const start = new Date().getTime();
+
         const board8Uint = Main.unpackBoardBlob(new Uint8Array(data));
         this.canvas.renderBoard(board8Uint);
+
+        console.log(`processFetchBoardResponse took ${new Date().getTime() - start} ms`);
     }
 
     private onPixelUpdateFromRemote(data: OnPixelUpdateData) {
         this.receivedUpdates.push(data);
         this.canvas.queuePixelUpdate(data);
+    }
+
+    private enableDraw(enable: boolean) {
+        if (enable) {
+            this.canvas.drawMode(this.user.isAdmin? DrawModes.Freehand:DrawModes.Pixel);
+        } else {
+            if (!this.user.isAdmin) {
+                this.canvas.drawMode(DrawModes.Disabled);
+            }
+        }
     }
 
     /**
@@ -128,8 +172,40 @@ class Main {
      */
     private onPixelUpdatesFromUI(updates: PixelUpdate[]) {
         this.submitPixelUpdates(updates).catch((err) => {
-            console.error(err)
+            console.error(err);
         });
+    }
+
+    private startUpdateTimer() {
+        clearTimeout(this.timerId);
+
+        const remainingMs = this.getRemainingMsBeforeDraw();
+        if (remainingMs <= 0) {
+            this.enableDraw(true);
+            this.remainingTimeDisplay('Now!');
+        } else {
+            this.enableDraw(false);
+            this.remainingTimeDisplay(`${Math.ceil(remainingMs / 1000)}s`);
+            this.timerId = setTimeout(this.startUpdateTimer.bind(this), Main.TIME_UPDATE_MS);
+        }
+    }
+
+    private getRemainingMsBeforeDraw(): number {
+        if (!this.nextUpdateTime) {
+            return 0;
+        }
+        return this.nextUpdateTime.getTime() - new Date().getTime();
+    }
+
+    private updateNextUpdateTime(lastUpdate: Date) {
+        this.nextUpdateTime = new Date();
+
+        if (lastUpdate) {
+            this.nextUpdateTime = lastUpdate;
+            this.nextUpdateTime.setSeconds(this.nextUpdateTime.getSeconds() + Main.DRAW_DELAY_S);
+        }
+
+        this.startUpdateTimer();
     }
 
     /**
@@ -205,19 +281,32 @@ class Main {
      * @param startLsn
      */
     private replayAndCleanupUpdates(startLsn: number) {
+        const start = new Date().getTime();
+
         const validUpdates:OnPixelUpdateData[] = [];
         console.log(`Replaying ${this.receivedUpdates.length} received updates`);
+        let count = 0;
         for (let i=0; i<this.receivedUpdates.length; i++) {
             const update = this.receivedUpdates[i];
             if (startLsn <= update._lsn) {
                 validUpdates.push(update);
                 this.canvas.queuePixelUpdate(update);
+                count++;
             }
         }
         this.receivedUpdates = validUpdates;
+
+        console.log(`Replayed ${count} updates took ${new Date().getTime() - start} ms`);
     }
 
-    private async submitPixelUpdates(updates: PixelUpdate[]) {
+    private async submitPixelUpdates(updates: PixelUpdate[]):Promise<{}> {
+        const remainingMs = this.getRemainingMsBeforeDraw();
+        if (remainingMs > 0 && !this.user.isAdmin) {
+            const error = `Must wait another ${remainingMs}ms`;
+            return Promise.reject(new Error(error));
+        }
+        console.log(`Submitting ${updates.length} updates`);
+
         const numberOfBatches = updates.length / BATCH_SIZE;
         const promises = [];
         for(let i = 0; i < numberOfBatches; i++)
@@ -241,9 +330,14 @@ class Main {
                     data,
                     success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
                         console.log("Data: " + data + "\nStatus: " + textStatus);
+                        this.updateNextUpdateTime(new Date());
                     },
                     error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
                         console.error(`Failed to submit pixel update:${errorThrown}`);
+
+                        // TODO Remove test code
+                        // this.updateNextUpdateTime(new Date());
+
                         reject(errorThrown);
                     }
                 });
