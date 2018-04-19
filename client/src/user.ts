@@ -30,7 +30,7 @@ export class User implements IUser {
                     resolve(new User(data));
                 },
                 error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
-                    console.error(`Failed to fetch metadata:${errorThrown}`);
+                    console.error(`Failed to fetch user:${errorThrown}`);
                     reject(errorThrown);
                 }
             });

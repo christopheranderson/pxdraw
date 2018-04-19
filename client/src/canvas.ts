@@ -8,11 +8,18 @@ interface CanvasParameters {
     onPixelUpdatesSubmitted: (updates: PixelUpdate[]) => void; // called when pixel updates submitted by user
 }
 
-enum TouchState {
+enum TouchStates {
     SingleDown,
     MultiDown,
     Up
 }
+
+export enum DrawModes {
+    Freehand,
+    Pixel,
+    Disabled
+}
+
 export class Canvas {
     public static readonly BOARD_WIDTH_PX = 1000;
     public static readonly BOARD_HEIGHT_PX = 1000;
@@ -51,12 +58,12 @@ export class Canvas {
     private canvasContainerElement: JQuery<HTMLElement>;
 
     // state
-    private isFreehandEnabled = true;
+    // public isFreehandEnabled:KnockoutObservable<boolean>;
     private drawingBuffer: DrawingBuffer;
-    private touchState: TouchState;
-    private updateScrollbarTimoutId: number = 0;
+    private touchState: TouchStates;
     private lastMouseDownPosition: Point2D;
     private hasMouseMoved: boolean;
+    public drawMode: KnockoutObservable<DrawModes>;
 
     // This array buffer will hold color data to be drawn to the canvas.
     private buffer: ArrayBuffer;
@@ -71,6 +78,11 @@ export class Canvas {
     // private queuedUpdate: PixelUpdate[] = [];
 
     public constructor(params: CanvasParameters) {
+        this.drawMode = ko.observable(DrawModes.Disabled);
+        this.drawMode.subscribe((newValue: DrawModes) => {
+            this.drawingBuffer.isFreehand = newValue === DrawModes.Freehand;
+        });
+
         this.params = params;
 
         this.canvas = <HTMLCanvasElement>document.getElementById('canvas');
@@ -119,16 +131,12 @@ export class Canvas {
         this.readBuffer = new Uint8ClampedArray(this.buffer);
         this.writeBuffer = new Uint32Array(this.buffer);
 
-        this.drawingBuffer = new DrawingBuffer(this.isFreehandEnabled);
-        this.touchState = TouchState.Up;
+        this.drawingBuffer = new DrawingBuffer(this.drawMode() === DrawModes.Freehand);
+        this.touchState = TouchStates.Up;
         this.lastMouseDownPosition = null;
         this.hasMouseMoved = false;
 
         this.centerCanvas();
-
-
-        // TODO REMOVE THIS
-        // this.loadDummyImage();
     }
 
     private centerCanvas() {
@@ -159,76 +167,6 @@ export class Canvas {
         return `rgba(${color.r},${color.g},${color.b},${color.a})`;
     }
 
-    /**
-     * For testing make sure something's there
-     */
-    private loadDummyImage() {
-        this.context.fillStyle = "white";
-        this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // get the size of our canvas
-        var canvas_width = this.canvas.width,
-            canvas_height = this.canvas.height;
-
-        var canvas_center_x = canvas_width / 2;
-        var canvas_center_y = canvas_height / 2;
-
-        var canvasPos = { "deltaX": 0, "deltaY": 0 };
-
-        var initialImageWidth = 500;
-        var newImageHeight = 0;
-
-        var image_height: number, image_width: number;
-
-        var imageXPos: number, imageYPos: number;
-
-        // load our large image
-        var img: any;
-        img = new Image();
-        const self = this;
-
-        img.onload = function () {
-
-            /*
-            # image is done loading, now we can paint it to the canvas
-
-            1) 0, 0 represents the x,y of the upper left corner where we place the image
-
-            2) canvas_width, canvas_height represents how large we want to display the image
-
-            3) The image might have a different scaling than the canvas so we might see
-               the image stretch or shrink.
-
-            4) let's calculate how to correctly display the image using the aspect ratio to fit
-               a pre-defined width (500px);
-            */
-
-            image_height = img.height;
-            image_width = img.width;
-            newImageHeight = image_height / image_width * initialImageWidth;
-
-            calculate_center();
-
-            canvasPos.deltaX = imageXPos;
-            canvasPos.deltaY = imageYPos;
-
-            self.context.drawImage(img, imageXPos, imageYPos, initialImageWidth, newImageHeight);
-        }
-        img.src = "img/tshirt_red.png";
-
-        var calculate_center = function () {
-
-            // center of the image currently
-            var image_center_x = initialImageWidth / 2;
-            var image_center_y = newImageHeight / 2;
-
-            // subtract the cavas size by the image center, that's how far we need to move it.
-            imageXPos = canvas_center_x - image_center_x;
-            imageYPos = 50;// canvas_center_y - image_center_y;
-
-        }
-    }
-
     private onMouseMove(e: MouseEvent | TouchEvent) {
         this.hasMouseMoved = true;
         let position;
@@ -240,8 +178,8 @@ export class Canvas {
             position = this.getCanvasCoordinates(e.clientX, e.clientY);
 
         } else if (e instanceof TouchEvent) {
-            if (e.touches.length > 1 || this.touchState === TouchState.MultiDown) {
-                this.touchState = TouchState.MultiDown;
+            if (e.touches.length > 1 || this.touchState === TouchStates.MultiDown) {
+                this.touchState = TouchStates.MultiDown;
                 // Multitouching (pinching)
                 return;
             }
@@ -256,15 +194,15 @@ export class Canvas {
 
         this.currentPositionStr(`${position.x + 1}, ${position.y + 1}`);
 
-        if (this.isFreehandEnabled && this.touchState === TouchState.SingleDown) {
+        if (this.drawMode() === DrawModes.Freehand && this.touchState === TouchStates.SingleDown) {
             const updates = this.drawingBuffer.penMove(position, this.selectedColorIndex());
             $.each(updates, (index: number, update: PixelUpdate) => {
                 this.paintToCanvas(update);
             });
         } else {
-            if (this.touchState === TouchState.SingleDown) {
+            if (this.touchState === TouchStates.SingleDown) {
                 if (this.zoomScale < Canvas.UNSTABLE_ZOOM) {
-                    // Smaller too low, panning to jittery and position diverges. Disable panning.
+                    // Zoom too low, panning to jittery and position diverges. Disable panning.
                     return;
                 }
                 const dx = position.x - this.lastMouseDownPosition.x;
@@ -282,7 +220,7 @@ export class Canvas {
                 // Ignore all but left button down
                 return;
             }
-            this.touchState = TouchState.SingleDown;
+            this.touchState = TouchStates.SingleDown;
             position = this.getCanvasCoordinates(e.clientX, e.clientY);
 
         } else if (e instanceof TouchEvent) {
@@ -290,10 +228,10 @@ export class Canvas {
             position = this.getCanvasCoordinates(t.clientX, t.clientY);
 
             switch (this.touchState) {
-                case TouchState.Up: this.touchState = TouchState.SingleDown; break;
-                case TouchState.SingleDown:
-                case TouchState.MultiDown:
-                    this.touchState = TouchState.MultiDown;
+                case TouchStates.Up: this.touchState = TouchStates.SingleDown; break;
+                case TouchStates.SingleDown:
+                case TouchStates.MultiDown:
+                    this.touchState = TouchStates.MultiDown;
                     break;
                 default: break;
             }
@@ -304,14 +242,16 @@ export class Canvas {
 
         this.lastMouseDownPosition = position;
 
-        const updates = this.drawingBuffer.penDown(position, this.selectedColorIndex());
-        $.each(updates, (index: number, update: PixelUpdate) => {
-            this.paintToCanvas(update);
-        });
+        if (this.drawMode() === DrawModes.Freehand || this.drawMode() === DrawModes.Pixel) {
+            const updates = this.drawingBuffer.penDown(position, this.selectedColorIndex());
+            $.each(updates, (index: number, update: PixelUpdate) => {
+                this.paintToCanvas(update);
+            });
+        }
     }
 
     private onMouseUp(e: MouseEvent | TouchEvent) {
-        if (this.touchState === TouchState.SingleDown) {
+        if (this.touchState === TouchStates.SingleDown) {
             let position = null;
             if (e instanceof MouseEvent) {
                 if (e.button !== 0) {
@@ -331,9 +271,8 @@ export class Canvas {
                 return;
             }
 
-            const updates = this.drawingBuffer.penUp(position, this.selectedColorIndex());
-
-            if ((!this.isFreehandEnabled && !this.hasMouseMoved) || this.isFreehandEnabled) {
+            if ((this.drawMode() === DrawModes.Pixel && !this.hasMouseMoved) || this.drawMode() === DrawModes.Freehand) {
+                const updates = this.drawingBuffer.penUp(position, this.selectedColorIndex());
                 $.each(updates, (index: number, update: PixelUpdate) => {
                     this.paintToCanvas(update);
                 });
@@ -342,7 +281,7 @@ export class Canvas {
             this.drawingBuffer.reset();
         }
 
-        this.touchState = TouchState.Up;
+        this.touchState = TouchStates.Up;
     }
 
     private paintToCanvas(update: PixelUpdate) {

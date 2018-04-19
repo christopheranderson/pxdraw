@@ -7,7 +7,7 @@
  *
  */
 import { config } from "./config";
-import { Canvas } from "./canvas";
+import { Canvas, DrawModes } from "./canvas";
 import { UpdateClient } from "./updateClient";
 import { User } from "./user";
 
@@ -66,7 +66,13 @@ class Main {
     private userEndpoint: string;
     private logoutEndpoint: string;
 
+    // UI
     private remainingTimeDisplay: KnockoutObservable<string>;
+    private loginUrl: KnockoutObservable<string>;
+    private logoutUrl: KnockoutObservable<string>;
+    private isLoggedIn: KnockoutObservable<boolean>;
+    private isAdmin: KnockoutObservable<boolean>;
+    private isFreehandDrawing: KnockoutObservable<boolean>;
 
     public constructor() {
         this.canvas = new Canvas({
@@ -74,6 +80,14 @@ class Main {
         });
 
         this.remainingTimeDisplay = ko.observable('00:00');
+        this.loginUrl = ko.observable(null);
+        this.logoutUrl = ko.observable(null);
+        this.isLoggedIn = ko.observable(false);
+        this.isAdmin = ko.observable(false);
+        this.isFreehandDrawing = ko.observable(this.canvas.drawMode() === DrawModes.Freehand);
+        this.isFreehandDrawing.subscribe((newValue: boolean) => {
+            this.canvas.drawMode(newValue? DrawModes.Freehand:DrawModes.Pixel);
+        });
     }
 
     public async init(){
@@ -82,13 +96,23 @@ class Main {
         });
 
         await this.fetchMetadata();
+
+        // TODO REMOVE
         // this.getBoardEndpoint = 'https://pxdrawbuild18dev.blob.core.windows.net/dev/board1';
         // this.websocketEndpoint = 'https://pxdraw-build18-notifcations.azurewebsites.net/hubs/notifications';
+        // this.userEndpoint = 'http://blah';
 
-        this.updateLoginLogout();
+        this.loginUrl(this.loginEndpoint);
+        this.logoutUrl(this.logoutEndpoint);
         try {
             this.user = await User.getUser(this.userEndpoint);
-            this.onUserIsLoggedIn();
+            // TODO REMOVE
+            // this.user.isAdmin = true;
+            this.isLoggedIn(true);
+            this.isAdmin(this.user.isAdmin);
+            this.canvas.drawMode(this.user.isAdmin? DrawModes.Freehand:DrawModes.Pixel);
+            this.isFreehandDrawing(this.user.isAdmin);
+
         } catch (e) {
             console.log("User is not logged in");
         }
@@ -98,18 +122,6 @@ class Main {
         // Periodic board update
         this.updateBoard();
         setInterval(this.updateBoard.bind(this), Main.REFRESH_BOARD_DELAY_MS);
-    }
-
-    private updateLoginLogout()
-    {
-        $("#pxdraw-login").prop("href",this.loginEndpoint);
-        $("#pxdraw-logout").prop("href",this.logoutEndpoint);
-    }
-
-    private onUserIsLoggedIn()
-    {
-        $("#pxdraw-login-block").addClass("hidden");
-        $("#pxdraw-logout-block").removeClass("hidden");
     }
 
     private processFetchBoardResponse(data: ArrayBuffer) {
