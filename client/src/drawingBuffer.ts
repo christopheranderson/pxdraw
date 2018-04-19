@@ -4,7 +4,7 @@
 import {PixelUpdate, CanvasColor, Point2D} from "./main";
 
 export class DrawingBuffer {
-    private static readonly FREEHAND_PEN_SIZE_PX = 2; // Freehand drawing uses thicker pen
+    private static readonly FREEHAND_PEN_SIZE_PX = 1; // Freehand drawing uses thicker pen
 
     private isFreehand: boolean;
     private isPenDown: boolean = false;
