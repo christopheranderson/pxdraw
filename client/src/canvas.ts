@@ -270,7 +270,7 @@ export class Canvas {
                 return;
             }
 
-            if ((this.drawMode() === DrawModes.Pixel && !this.hasMouseMoved) || this.drawMode() === DrawModes.Freehand) {
+            if (this.drawMode() === DrawModes.Pixel || this.drawMode() === DrawModes.Freehand) {
                 const updates = this.drawingBuffer.penUp(position, this.selectedColorIndex());
                 $.each(updates, (index: number, update: PixelUpdate) => {
                     this.paintToCanvas(update);

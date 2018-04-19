@@ -316,7 +316,6 @@ class Main {
                 $.ajax({
                     type: 'POST',
                     url: this.updatePixelEndpoint,
-                    dataType: "json",
                     contentType: "application/json",
                     xhrFields: {
                         withCredentials: true
