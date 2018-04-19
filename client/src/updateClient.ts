@@ -36,7 +36,7 @@ export class UpdateClient {
             }
 
             try {
-                const docs: OnPixelUpdateData[] = JSON.parse(data);
+                const docs: OnPixelUpdateData[] = UpdateClient.smoosh(JSON.parse(data));
                 if (!Array.isArray(docs)) {
                     console.error(`Change data not an array ${docs}`);
                     return;
@@ -68,5 +68,27 @@ export class UpdateClient {
      */
     private static isOnPixelUpdateData(object: any): boolean {
         return 'x' in object && 'y' in object && 'color' in object && '_lsn' in object;
+    }
+
+    private static smoosh(docs: any[]): OnPixelUpdateData[] {
+        const updates: OnPixelUpdateData[] = [];
+
+        if(!Array.isArray(docs))
+        {
+            throw new Error("Not an array");
+        }
+
+        for(const doc of docs) {
+            if(doc.items !== undefined)
+            {
+                for(var pixel of doc.items) {
+                    updates.push(pixel);
+                }
+            } else {
+                updates.push(doc);
+            }
+        }
+
+        return updates
     }
  }

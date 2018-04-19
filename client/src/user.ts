@@ -1,4 +1,5 @@
-import { AppConfig } from "./config";
+import { config, AppConfig } from "./config";
+import { Main } from "./main";
 
 export interface IUser {
     id: string;
@@ -25,6 +26,13 @@ export class User implements IUser {
                 url: userEndpoint,
                 xhrFields: {
                     withCredentials: true
+                },
+                beforeSend: function (request) {
+                    if(config.isLocal) {
+                        // locally, we spoof the header
+                        request.setRequestHeader('x-ms-client-principal-id', Main.LOCALHOST_CLIENT_PRINCIPAL_ID);
+                        request.setRequestHeader('x-ms-client-principal-idp', Main.LOCALHOST_CLIENT_PRINCIPAL_IDP);
+                    }
                 },
                 success: (data: IUser, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
                     resolve(new User(data));

@@ -47,8 +47,9 @@ export interface FetchBoardData {
     lsn: number;
 }
 
-class Main {
-    private static readonly LOCALHOST_CLIENT_PRINCIPAL_ID = 'PrincicalId';
+export class Main {
+    public static readonly LOCALHOST_CLIENT_PRINCIPAL_ID = 'PrincicalId';
+    public static readonly LOCALHOST_CLIENT_PRINCIPAL_IDP = 'aad'; // use twitter for non-admin
     private static readonly REFRESH_BOARD_DELAY_MS = 30000;
     private static readonly DRAW_DELAY_S = 30;
     private static readonly TIME_UPDATE_MS = 1000; // Update every second
@@ -323,6 +324,7 @@ class Main {
                         if(config.isLocal) {
                             // locally, we spoof the header
                             request.setRequestHeader('x-ms-client-principal-id', Main.LOCALHOST_CLIENT_PRINCIPAL_ID);
+                            request.setRequestHeader('x-ms-client-principal-idp', Main.LOCALHOST_CLIENT_PRINCIPAL_IDP);
                         }
                     },
                     data,
