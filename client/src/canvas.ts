@@ -58,7 +58,6 @@ export class Canvas {
     private canvasContainerElement: JQuery<HTMLElement>;
 
     // state
-    // public isFreehandEnabled:KnockoutObservable<boolean>;
     private drawingBuffer: DrawingBuffer;
     private touchState: TouchStates;
     private lastMouseDownPosition: Point2D;
