@@ -9,6 +9,7 @@
 import { config } from "./config";
 import { Canvas } from "./canvas";
 import { UpdateClient } from "./updateClient";
+import { User } from "./user";
 
 const BATCH_SIZE = 300;
 
@@ -37,6 +38,8 @@ export interface FetchMetadataResponseData {
     getBoardEndpoint: string;
     updatePixelEndpoint: string;
     websocketEndpoint: string;
+    userEndpoint: string;
+    logoutEndpoint: string;
 }
 
 export interface FetchBoardData {
@@ -54,10 +57,14 @@ class Main {
 
     private updateClient: UpdateClient;
 
+    private user: User;
+
     private loginEndpoint: string;
     private getBoardEndpoint: string;
     private updatePixelEndpoint: string;
     private websocketEndpoint: string;
+    private userEndpoint: string;
+    private logoutEndpoint: string;
 
     private remainingTimeDisplay: KnockoutObservable<string>;
 
@@ -78,11 +85,31 @@ class Main {
         // this.getBoardEndpoint = 'https://pxdrawbuild18dev.blob.core.windows.net/dev/board1';
         // this.websocketEndpoint = 'https://pxdraw-build18-notifcations.azurewebsites.net/hubs/notifications';
 
+        this.updateLoginLogout();
+        try {
+            this.user = await User.getUser(this.userEndpoint);
+            this.onUserIsLoggedIn();
+        } catch (e) {
+            console.log("User is not logged in");
+        }
+
         this.updateClient.init(this.websocketEndpoint);
 
         // Periodic board update
         this.updateBoard();
         setInterval(this.updateBoard.bind(this), Main.REFRESH_BOARD_DELAY_MS);
+    }
+
+    private updateLoginLogout()
+    {
+        $("#pxdraw-login").prop("href",this.loginEndpoint);
+        $("#pxdraw-logout").prop("href",this.logoutEndpoint);
+    }
+
+    private onUserIsLoggedIn()
+    {
+        $("#pxdraw-login-block").addClass("hidden");
+        $("#pxdraw-logout-block").removeClass("hidden");
     }
 
     private processFetchBoardResponse(data: ArrayBuffer) {
@@ -127,11 +154,14 @@ class Main {
             $.ajax({
                 type: 'GET',
                 url: config.metadataEndpoint,
+                crossDomain: true,
                 success: (data: FetchMetadataResponseData, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
                     this.loginEndpoint = data.loginEndpoint;
                     this.getBoardEndpoint = data.getBoardEndpoint;
                     this.updatePixelEndpoint = data.updatePixelEndpoint;
                     this.websocketEndpoint = data.websocketEndpoint;
+                    this.userEndpoint = data.userEndpoint;
+                    this.logoutEndpoint = data.logoutEndpoint;
                     resolve();
                 },
                 error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
@@ -199,6 +229,9 @@ class Main {
                     url: this.updatePixelEndpoint,
                     dataType: "json",
                     contentType: "application/json",
+                    xhrFields: {
+                        withCredentials: true
+                    },
                     beforeSend: function (request) {
                         if(config.isLocal) {
                             // locally, we spoof the header

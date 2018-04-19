@@ -14,7 +14,7 @@ namespace pxdraw.api.services
     {
         private Uri _CollectionUri;
         private static UserService _singleton;
-        public UserService GetDefaultSingleton()
+        public static UserService GetDefaultSingleton()
         {
             if(_singleton  == null)
             {
@@ -50,7 +50,7 @@ namespace pxdraw.api.services
                     Id = UserId,
                     LastInsert = DateTime.Now.AddDays(-1),
                 };
-                var response = await _Client.CreateDocumentAsync(UriFactory.CreateDocumentUri("pxdraw", "users", UserId), user);
+                var response = await _Client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri("pxdraw", "users"), user);
             }
             return user;
         }

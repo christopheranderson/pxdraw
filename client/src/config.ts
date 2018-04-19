@@ -7,7 +7,7 @@ if (window && window.location && window.location.hostname) {
     if (!window.location.hostname.startsWith("localhost")) {
         const info = parseHostnameByConvention(window.location.hostname);
         config.metadataEndpoint = getMetadataEndpoint(info);
-        // TODO: should set isLocal = false
+        config.isLocal = false
     }
 }
 
@@ -36,7 +36,7 @@ export interface hostinfo {
 
 export interface AppConfig {
     metadataEndpoint: string;
-    isLocal: true;
+    isLocal: boolean;
 }
 
 export { config };

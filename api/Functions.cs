@@ -46,9 +46,12 @@ namespace pxdraw.api
             try
             {
                 string getBoardEndpoint = Environment.GetEnvironmentVariable("PXDRAW_GETBOARD_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_GETBOARD_ENDPOINT environment variable does not exist.");
-                string loginEndpoint = Environment.GetEnvironmentVariable("PXDRAW_LOGIN_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_LOGIN_ENDPOINT environment variable does not exist.");
+                string loginEndpoint = Environment.GetEnvironmentVariable("PXDRAW_TWITTER_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_TWITTER_ENDPOINT environment variable does not exist.");
                 string updatePixelEndpoint = Environment.GetEnvironmentVariable("PXDRAW_UPDATEPIXEL_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_UPDATEPIXEL_ENDPOINT environment variable does not exist.");
                 string websocketEndpoint = Environment.GetEnvironmentVariable("PXDRAW_WEBSOCKET_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_WEBSOCKET_ENDPOINT environment variable does not exist.");
+                string userEndpoint = Environment.GetEnvironmentVariable("PXDRAW_USER_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_USER_ENDPOINT environment variable does not exist.");
+                string adminEndpoint = Environment.GetEnvironmentVariable("PXDRAW_ADMIN_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_ADMIN_ENDPOINT environment variable does not exist.");
+                string logoutEndpoint = Environment.GetEnvironmentVariable("PXDRAW_LOGOUT_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_LOGOUT_ENDPOINT environment variable does not exist.");
 
                 var metadata = new Metadata
                 {
@@ -56,14 +59,81 @@ namespace pxdraw.api
                     LoginEndpoint = loginEndpoint,
                     UpdatePixelEndpoint = updatePixelEndpoint,
                     WebsocketEndpoint = websocketEndpoint,
+                    UserEndpoint = userEndpoint,
+                    LogoutEndpoint = logoutEndpoint,
                 };
 
-                return req.CreateResponse(HttpStatusCode.OK, metadata);
+                var res = req.CreateResponse(HttpStatusCode.OK, metadata);
+                ApplyCORSRules(req, res);
+                return res;
             }
             catch (Exception err)
             {
                 log.LogError(err);
-                return req.CreateErrorResponse(HttpStatusCode.InternalServerError, $"Could not complete the request. Reference {context.InvocationId} for details.");
+                var res = req.CreateErrorResponse(HttpStatusCode.InternalServerError, $"Could not complete the request. Reference {context.InvocationId} for details.");
+                ApplyCORSRules(req, res);
+                return res;
+            }
+        }
+
+        /// <summary>
+        /// Retrieves information about the user
+        /// 
+        /// GET /api/user
+        /// 
+        /// Returns
+        /// - 200 if the request was a success
+        /// - 429 if the user is not authenticated
+        /// - 500 if there is a server error
+        /// Content-type: application/json; utf8
+        /// Body:
+        /// {
+        ///     "id":string - user's id
+        ///     "lastInsert":DateTime - last insert recorded for the user
+        ///     "isAdmin":boolean - if the user is an admin (and will be allowed to insert more than 1 pixel at a time)
+        /// </summary>
+        /// <param name="req"></param>
+        /// <param name="log"></param>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        [FunctionName("user")]
+        public static async Task<HttpResponseMessage> GetUser([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequestMessage req, ILogger log, ExecutionContext context)
+        {
+            string userId;
+            string idp;
+
+            // Validate the user is authenticated
+            try
+            {
+                // "x-ms-client-principal-id" is the flag that this is a valid token
+                userId = req.Headers.FirstOrDefault(h => string.Equals(h.Key, "x-ms-client-principal-id", StringComparison.OrdinalIgnoreCase)).Value?.FirstOrDefault() ?? throw new InvalidOperationException("Principal id header was missing");
+                idp = req.Headers.FirstOrDefault(h => string.Equals(h.Key, "x-ms-client-principal-idp", StringComparison.OrdinalIgnoreCase)).Value?.FirstOrDefault() ?? throw new InvalidOperationException("Identity provider header was missing");
+            }
+            catch (Exception err)
+            {
+                log.LogError(err);
+                log.LogInformation($"Headers {HeadersToString(req.Headers)}");
+                var res = req.CreateErrorResponse(HttpStatusCode.Unauthorized, $"Could not authenticate user. Reference {context.InvocationId} for details.");
+                ApplyCORSRules(req, res);
+                return res;
+            }
+
+            try
+            {
+                UserService us = UserService.GetDefaultSingleton();
+                User user = await us.GetOrCreateUser(userId);
+                user.IsAdmin = (idp == "aad"); // All users logged in through AAD are admins, everyone else is not
+                var res = req.CreateResponse(user);
+                ApplyCORSRules(req, res);
+                return res;
+            }
+            catch (Exception err)
+            {
+                log.LogError(err);
+                log.LogInformation($"Headers {HeadersToString(req.Headers)}");
+                var res = req.CreateErrorResponse(HttpStatusCode.InternalServerError, $"Could not load user info. Reference {context.InvocationId} for details.");
+                ApplyCORSRules(req, res);
+                return res;
             }
         }
 
@@ -90,8 +160,15 @@ namespace pxdraw.api
         /// <param name="context"></param>
         /// <returns></returns>
         [FunctionName("update-pixel")]
-        public static async Task<HttpResponseMessage> UpdatePixel([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequestMessage req, ILogger log, ExecutionContext context)
+        public static async Task<HttpResponseMessage> UpdatePixel([HttpTrigger(AuthorizationLevel.Anonymous, "post", "options", Route = null)] HttpRequestMessage req, ILogger log, ExecutionContext context)
         {
+            if(req.Method == HttpMethod.Options)
+            {
+                var res = req.CreateResponse();
+                ApplyCORSRules(req, res);
+                return res;
+            }
+
             string userId;
             DateTime time = new DateTime();
 
@@ -105,7 +182,9 @@ namespace pxdraw.api
             {
                 log.LogError(err);
                 log.LogInformation($"Headers {HeadersToString(req.Headers)}");
-                return req.CreateErrorResponse(HttpStatusCode.Unauthorized, $"Could not authenticate user. Reference {context.InvocationId} for details.");
+                var res = req.CreateErrorResponse(HttpStatusCode.Unauthorized, $"Could not authenticate user. Reference {context.InvocationId} for details.");
+                ApplyCORSRules(req, res);
+                return res;
             }
 
             // TODO: User throttling
@@ -126,7 +205,9 @@ namespace pxdraw.api
             catch (Exception err)
             {
                 log.LogError(err);
-                return req.CreateErrorResponse(HttpStatusCode.BadRequest, $"Could not create pixel object from body content. Refer to {context.InvocationId} for details.");
+                var res = req.CreateErrorResponse(HttpStatusCode.BadRequest, $"Could not create pixel object from body content. Refer to {context.InvocationId} for details.");
+                ApplyCORSRules(req, res);
+                return res;
             }
             
             // Insert pixels into Cosmos DB
@@ -138,10 +219,14 @@ namespace pxdraw.api
             catch (Exception err)
             {
                 log.LogError(err);
-                return req.CreateErrorResponse(HttpStatusCode.InternalServerError, $"Could not insert pixels. Refer to {context.InvocationId} for details.");
+                var res = req.CreateErrorResponse(HttpStatusCode.InternalServerError, $"Could not insert pixels. Refer to {context.InvocationId} for details.");
+                ApplyCORSRules(req, res);
+                return res;
             }
 
-            return req.CreateResponse(HttpStatusCode.Created);
+            var response = req.CreateResponse(HttpStatusCode.Created);
+            ApplyCORSRules(req, response);
+            return response;
         }
 
         private static string HeadersToString(HttpRequestHeaders headers)
@@ -155,6 +240,19 @@ namespace pxdraw.api
                 }
             }
             return output;
+        }
+
+        private static void ApplyCORSRules(HttpRequestMessage req, HttpResponseMessage res)
+        {
+            var origin = req.Headers.GetValues("origin").FirstOrDefault();
+
+            if (req.Headers.Contains("Origin"))
+            {
+                res.Headers.Add("Access-Control-Allow-Credentials", "true");
+                res.Headers.Add("Access-Control-Allow-Origin", origin);
+                res.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+                res.Headers.Add("Access-Control-Allow-Headers", "Content-Type");
+            }
         }
     }
 }
