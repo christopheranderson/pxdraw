@@ -73,6 +73,8 @@ export class Canvas {
     // 32 bit colors stored as AGBR (rgba in reverse).
     private writeBuffer: Uint32Array;
 
+    private historyBuffer: PixelUpdate[] = [];
+
 
     // private queuedUpdate: PixelUpdate[] = [];
 
@@ -196,6 +198,7 @@ export class Canvas {
         if (this.drawMode() === DrawModes.Freehand && this.touchState === TouchStates.SingleDown) {
             const updates = this.drawingBuffer.penMove(position, this.selectedColorIndex());
             $.each(updates, (index: number, update: PixelUpdate) => {
+                this.historyBuffer.push(update);
                 this.paintToCanvas(update);
             });
         } else {
@@ -244,6 +247,7 @@ export class Canvas {
         if (this.drawMode() === DrawModes.Freehand || this.drawMode() === DrawModes.Pixel) {
             const updates = this.drawingBuffer.penDown(position, this.selectedColorIndex());
             $.each(updates, (index: number, update: PixelUpdate) => {
+                this.historyBuffer.push(update);
                 this.paintToCanvas(update);
             });
         }
@@ -273,6 +277,7 @@ export class Canvas {
             if (this.drawMode() === DrawModes.Pixel || this.drawMode() === DrawModes.Freehand) {
                 const updates = this.drawingBuffer.penUp(position, this.selectedColorIndex());
                 $.each(updates, (index: number, update: PixelUpdate) => {
+                    this.historyBuffer.push(update);
                     this.paintToCanvas(update);
                 });
                 this.params.onPixelUpdatesSubmitted(this.drawingBuffer.getAllUpdates());
@@ -314,6 +319,7 @@ export class Canvas {
 
     public queuePixelUpdate(data: PixelUpdate) {
         // for now, just draw it
+        this.historyBuffer.push(data);
         this.paintToCanvas(data);
     }
 
@@ -357,6 +363,12 @@ export class Canvas {
                 x = 0;
                 y++;
             }
+        }
+
+        while(this.historyBuffer.length > 0)
+        {
+            let px = this.historyBuffer.pop();
+            this.paintToBuffer({x: px.x, y: px.y}, px.color);
         }
 
         // Now paint over canvas

@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using Microsoft.Azure.Documents;
 using System;
+using System.IO;
 
 namespace pxdraw.updateprocessor
 {
@@ -46,7 +47,7 @@ namespace pxdraw.updateprocessor
         }
 
         [FunctionName("reset-board")]
-        public async static Task<HttpResponseMessage> ResetBoard([HttpTrigger(authLevel: AuthorizationLevel.Function)] HttpRequestMessage req, ILogger log)
+        public async static Task<HttpResponseMessage> ResetBoard([HttpTrigger(authLevel: AuthorizationLevel.Function)] HttpRequestMessage req, ILogger log, ExecutionContext context)
         {
             log.LogInformation("Resetting board");
             // bool isRandom = req.Headers.Contains("x-pxdraw-random");
@@ -55,7 +56,7 @@ namespace pxdraw.updateprocessor
             var containerName = GetDefaultConatinerName();
             var boardName = GetDefaultBoardName();
 
-            Board board = Board.GenerateBoardFromTshirt();
+            Board board = Board.GenerateBoardFromTshirt(Path.Combine(context.FunctionAppDirectory, "./content/tshirt.png"));
             await bu.UpdateBlob(containerName, boardName, board.Bitmap);
             return req.CreateResponse();
         }
