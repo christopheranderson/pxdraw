@@ -33,9 +33,9 @@
             <p class="description">Welcome to Azure Cosmos DB PxDRAW! PxDRAW is a collaborative project. Pick a color on the left and draw on the
                 canvas, one pixel a time.</p>
         </div>
-        <div class="header-block-container">
-            <div class="header-block-title">Draw pixel in</div>
-            <div class="header-block-main">00:00</div>
+        <div class="header-block-container" data-bind="visible:isLoggedIn()">
+            <div class="header-block-title">Draw pixel</div>
+            <div class="header-block-main" data-bind="text: remainingTimeDisplay, css: { highlight: isNow() }"></div>
         </div>
         <div class="header-block-container" data-bind="visible:isLoggedIn()">
             <div class="header-block-title">Done drawing!</div>
@@ -46,7 +46,7 @@
         <div class="header-block-container" data-bind="visible:!isLoggedIn()">
             <div class="header-block-title">Do you want to draw?</div>
             <div class="header-block-main">
-                <a data-bind="attr: { href: loginUrl }">Log in</a>
+                <a id="pxdraw-login" data-bind="attr: { href: loginUrl }">Log in</a>
             </div>
         </div>
     </div>
