@@ -17,5 +17,9 @@ namespace pxdraw.api.models
         public string UpdatePixelEndpoint { get; set; }
         [JsonProperty("websocketEndpoint", NullValueHandling = NullValueHandling.Include)]
         public string WebsocketEndpoint { get; set; }
+        [JsonProperty("userEndpoint", NullValueHandling = NullValueHandling.Include)]
+        public string UserEndpoint { get; set; }
+        [JsonProperty("logoutEndpoint")]
+        public string LogoutEndpoint { get; set; }
     }
 }

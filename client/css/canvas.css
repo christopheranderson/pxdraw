@@ -10,6 +10,14 @@
     max-height: 55px;
 }
 
+.hidden {
+    display: none;
+}
+
+#pxdraw-login {
+    color: #b8d532;
+}
+
 .text-container {
     display: flex;
     flex-direction: column;
