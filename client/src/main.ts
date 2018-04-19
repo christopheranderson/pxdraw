@@ -124,7 +124,6 @@ class Main {
             //     lastUpdate: new Date(new Date().getTime() - 3000),
             //     id: 'userid'
             // }
-
             this.isLoggedIn(true);
             this.isAdmin(this.user.isAdmin);
             this.enableDraw(true);
@@ -180,7 +179,7 @@ class Main {
         clearTimeout(this.timerId);
 
         const remainingMs = this.getRemainingMsBeforeDraw();
-        if (remainingMs <= 0 || this.isAdmin) {
+        if (remainingMs <= 0 || this.isAdmin()) {
             this.enableDraw(true);
             this.remainingTimeDisplay('Now!');
         } else {

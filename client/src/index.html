@@ -37,7 +37,7 @@
             <div class="header-block-title">Draw pixel</div>
             <div class="header-block-main" data-bind="text: remainingTimeDisplay, css: { highlight: isNow() }"></div>
         </div>
-        <div class="header-block-container" data-bind="visible:isLoggedIn()">
+        <div class="header-block-container" style="display:none" data-bind="visible:isLoggedIn()">
             <div class="header-block-title">Done drawing!</div>
             <div class="header-block-main">
                 <a data-bind="attr: { href: logoutUrl }">Log out</a>

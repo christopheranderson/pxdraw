@@ -64,10 +64,10 @@ namespace pxdraw.updateprocessor.models
             return new Board(bitmap, boardsize: boardsize);
         }
 
-        public static Board GenerateBoardFromTshirt(int boardsize = 1000)
+        public static Board GenerateBoardFromTshirt(string pathToShirt, int boardsize = 1000)
         {
             byte[] bits = new byte[(int)(Math.Pow(boardsize, 2) / 2)];
-            Bitmap bitmap = new Bitmap("./content/tshirt.png");
+            Bitmap bitmap = new Bitmap(pathToShirt);
 
             for(var i = 0; i < bits.Length; i++)
             {
@@ -76,8 +76,8 @@ namespace pxdraw.updateprocessor.models
 
             Board board = new Board(bits);
 
-            var xoffset = 250;
-            var yoffset = 0;
+            var xoffset = 25;
+            var yoffset = 60;
 
             for(var y = 0; y < bitmap.Height; y++)
             {
