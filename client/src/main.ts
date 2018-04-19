@@ -143,8 +143,12 @@ class Main {
     }
 
     private processFetchBoardResponse(data: ArrayBuffer) {
+        const start = new Date().getTime();
+
         const board8Uint = Main.unpackBoardBlob(new Uint8Array(data));
         this.canvas.renderBoard(board8Uint);
+
+        console.log(`processFetchBoardResponse took ${new Date().getTime() - start} ms`);
     }
 
     private onPixelUpdateFromRemote(data: OnPixelUpdateData) {
@@ -277,16 +281,22 @@ class Main {
      * @param startLsn
      */
     private replayAndCleanupUpdates(startLsn: number) {
+        const start = new Date().getTime();
+
         const validUpdates:OnPixelUpdateData[] = [];
         console.log(`Replaying ${this.receivedUpdates.length} received updates`);
+        let count = 0;
         for (let i=0; i<this.receivedUpdates.length; i++) {
             const update = this.receivedUpdates[i];
             if (startLsn <= update._lsn) {
                 validUpdates.push(update);
                 this.canvas.queuePixelUpdate(update);
+                count++;
             }
         }
         this.receivedUpdates = validUpdates;
+
+        console.log(`Replayed ${count} updates took ${new Date().getTime() - start} ms`);
     }
 
     private async submitPixelUpdates(updates: PixelUpdate[]):Promise<{}> {
