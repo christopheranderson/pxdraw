@@ -305,6 +305,7 @@ class Main {
             const error = `Must wait another ${remainingMs}ms`;
             return Promise.reject(new Error(error));
         }
+        console.log(`Submitting ${updates.length} updates`);
 
         const numberOfBatches = updates.length / BATCH_SIZE;
         const promises = [];
