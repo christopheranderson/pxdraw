@@ -255,7 +255,10 @@ namespace pxdraw.api
                 return res;
             }
 
-            var response = req.CreateResponse(HttpStatusCode.Created);
+            var response = req.CreateResponse(HttpStatusCode.Created, new {
+                timestamp = time
+            });
+
             ApplyCORSRules(req, response);
             return response;
         }
