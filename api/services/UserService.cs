@@ -48,14 +48,17 @@ namespace pxdraw.api.services
                 user = new User
                 {
                     Id = UserId,
-                    LastInsert = DateTime.Now.AddDays(-1),
+                    LastInsert = DateTime.UtcNow.AddDays(-1),
                 };
                 var response = await _Client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri("pxdraw", "users"), user);
             }
             return user;
         }
 
-
+        public async Task UpsertUser(User user)
+        {
+            await _Client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri("pxdraw", "users"), user);
+        }
 
         private static Uri CreateDefaultCollectionUri()
         {
