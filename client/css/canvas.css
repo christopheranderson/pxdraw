@@ -8,9 +8,11 @@ body {
     font-family: Arial, Helvetica, sans-serif;
     display: flex;
     padding: 10px;
+    vertical-align: middle;
 }
 
 .header img {
+    margin: 10px;
     max-height: 55px;
 }
 
@@ -20,9 +22,6 @@ body {
 }
 
 .text-container {
-    display: flex;
-    flex-direction: column;
-    margin-left: 20px;
     flex-grow: 1;
 }
 
@@ -32,7 +31,6 @@ body {
 
 .description {
     font-size: 15px;
-    margin-top: 10px;
 }
 
 .main-area {
@@ -50,13 +48,21 @@ body {
     width: 25px;
     height: 25px;
     margin: 9px;
-    border: 1px solid black;
     opacity: 0.5;
 }
 
+.bordered {
+    border: 1px solid #cccccc;
+}
+
+.nonbordered {
+    border: 1px solid rgba(0,0,0,0);
+}
+
 .palette-button.selected {
-    border: 3px solid #333333;
-    margin: 7px;
+    outline: 2px solid #333333;
+    border: 2px solid white;
+    margin: 8px;
     opacity: 1;
 }
 
@@ -65,8 +71,8 @@ body {
     background-repeat: repeat;
     margin-left: 10px;
     flex-grow: 1;
-    height: calc(100vh - 85px);
-    border-left: 1px solid black;
+    height: calc(100vh - 86px);
+    border-left: 1px solid #cccccc;
 }
 
 #canvas {
@@ -99,23 +105,24 @@ body {
     font-size: 14px;
     color: #ffffff;
     cursor: move;
-    
     font-family: Arial, Helvetica, sans-serif;
 }
 
 .header-block-container {
-    margin: 10px 10px 0px 10px;
-    text-align: center;
-    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    margin: 0px 20px;
 }
 
 .header-block-title {
     font-size: 12px;
+    text-align: center;
 }
 
 .header-block-main {
-    margin-top: 5px;
     font-size: 24px;
+    text-align: center;
 }
 
 .header-block-main a {

@@ -26,12 +26,12 @@
 <body>
     <div class="header">
         <img src="img/CosmosDB_rgb_ui_darktheme.svg">
-        <div class="text-container">
+        <div class="header-block-container text-container">
             <div class="title">Azure Cosmos DB
                 <strong>PxDRAW</strong>
             </div>
-            <p class="description">Welcome to Azure Cosmos DB PxDRAW! PxDRAW is a collaborative project. Pick a color on the left and draw on the
-                canvas, one pixel a time.</p>
+            <div class="description">Welcome to Azure Cosmos DB PxDRAW! PxDRAW is a collaborative project. Pick a color on the left and draw on the
+                canvas, one pixel a time.</div>
         </div>
         <div class="header-block-container" data-bind="visible:isLoggedIn()">
             <div class="header-block-title">Draw pixel</div>
@@ -53,7 +53,7 @@
     <div class="main-area">
         <div class="palette-container">
             <div data-bind="foreach: canvas.availableColors">
-                <div class="palette-button" data-bind="style: { backgroundColor: $parent.canvas.toRGBA($index()) }, css: { selected: $parent.canvas.selectedColorIndex() === $index() }, click: $parent.canvas.selectColorIndex.bind($parent.canvas, $index())"></div>
+                <div class="palette-button" data-bind="style: { backgroundColor: $parent.canvas.toRGBA($index()) }, css: { selected: $parent.canvas.selectedColorIndex() === $index(), bordered: $index() === 3, nonbordered: $index() !== 3 }, click: $parent.canvas.selectColorIndex.bind($parent.canvas, $index())"></div>
             </div>
             <input type="checkbox" data-bind="visible:isAdmin, checked: isFreehandDrawing" />
         </div>
