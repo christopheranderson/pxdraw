@@ -170,13 +170,15 @@ namespace pxdraw.api
             }
 
             string userId;
-            DateTime time = new DateTime();
+            string idp;
+            DateTime time = DateTime.UtcNow;
 
             // Validate the user is authenticated
             try
             {
                 // "x-ms-client-principal-id" is the flag that this is a valid token
                 userId = req.Headers.FirstOrDefault(h => string.Equals(h.Key, "x-ms-client-principal-id", StringComparison.OrdinalIgnoreCase)).Value?.FirstOrDefault() ?? throw new InvalidOperationException("Principal id header was missing");
+                idp = req.Headers.FirstOrDefault(h => string.Equals(h.Key, "x-ms-client-principal-idp", StringComparison.OrdinalIgnoreCase)).Value?.FirstOrDefault() ?? throw new InvalidOperationException("Identity provider header was missing");
             }
             catch (Exception err)
             {
@@ -186,10 +188,6 @@ namespace pxdraw.api
                 ApplyCORSRules(req, res);
                 return res;
             }
-
-            // TODO: User throttling
-
-            // TODO: Admin should be the only one allowed to insert more than 1 pixel
 
             // Grab pixels from request
             Pixel[] pixels;
@@ -209,7 +207,40 @@ namespace pxdraw.api
                 ApplyCORSRules(req, res);
                 return res;
             }
-            
+
+            // User throttling
+            // Admin should be the only one allowed to insert more than 1 pixel
+            // Admin should be hte only one allowed to insert more often than 30 seconds
+            try
+            {
+                UserService us = UserService.GetDefaultSingleton();
+                User user = await us.GetOrCreateUser(userId);
+                user.IsAdmin = (idp == "aad"); // All users logged in through AAD are admins, everyone else is not
+                if(pixels.Length > 1 && !user.IsAdmin)
+                {
+                    var res = req.CreateErrorResponse(HttpStatusCode.BadRequest, $"User can only insert 1 pixel at a time. Refer to {context.InvocationId} for details.");
+                    ApplyCORSRules(req, res);
+                    return res;
+                }
+
+                if(!user.IsAdmin && user.LastInsert > time.AddSeconds(-30))
+                {
+                    var res = req.CreateErrorResponse((HttpStatusCode)429, $"User can only insert 1 pixel at a time. Refer to {context.InvocationId} for details.");
+                    ApplyCORSRules(req, res);
+                    return res;
+                }
+
+                user.LastInsert = time;
+                await us.UpsertUser(user);
+            }
+            catch (Exception err)
+            {
+                log.LogError(err);
+                var res = req.CreateErrorResponse(HttpStatusCode.BadRequest, $"Issue validating user. Refer to {context.InvocationId} for details.");
+                ApplyCORSRules(req, res);
+                return res;
+            }
+
             // Insert pixels into Cosmos DB
             try
             {
