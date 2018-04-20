@@ -48,7 +48,6 @@ body {
     width: 25px;
     height: 25px;
     margin: 9px;
-    opacity: 0.5;
 }
 
 .bordered {
@@ -63,7 +62,6 @@ body {
     outline: 2px solid #333333;
     border: 2px solid white;
     margin: 8px;
-    opacity: 1;
 }
 
 #canvas-container {
