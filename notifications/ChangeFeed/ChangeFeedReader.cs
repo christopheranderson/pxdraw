@@ -8,11 +8,13 @@ namespace PxDRAW.SignalR.ChangeFeed
     using System.Globalization;
     using System.Linq;
     using System.Net;
-    using System.Net.Http;
     using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.ApplicationInsights;
+    using Microsoft.ApplicationInsights.DataContracts;
+    using Microsoft.ApplicationInsights.DependencyCollector;
+    using Microsoft.ApplicationInsights.Extensibility;
     using Microsoft.AspNetCore.SignalR;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -26,6 +28,9 @@ namespace PxDRAW.SignalR.ChangeFeed
     internal class ChangeFeedReader : IHostedService
     {
         private const int DefaultMaxItemCount = 100;
+
+        // Polling delay is used when there are no changes in the feed
+        private const int DefaultPollingIntervalInSeconds = 1;
         private readonly TelemetryClient telemetryClient;
         private readonly CosmosDbConfiguration cosmosDbConfiguration;
         private bool isRunning = false;
@@ -38,15 +43,15 @@ namespace PxDRAW.SignalR.ChangeFeed
             var cosmosDbConfiguration = ChangeFeedReader.BuildConfigurationForSection(configuration, "CosmosDB");
             this.cosmosDbConfiguration = cosmosDbConfiguration;
             this.signalRHubContext = signalRHubContext;
-            this.telemetryClient = new TelemetryClient(new Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration()
-            {
-                InstrumentationKey = ChangeFeedReader.DetectAppInsightsInstrumentationKey(configuration),
-            });
+            TelemetryConfiguration telemetryConfiguration = TelemetryConfiguration.Active;
+            telemetryConfiguration.InstrumentationKey = ChangeFeedReader.DetectAppInsightsInstrumentationKey(configuration);
+            telemetryConfiguration.TelemetryInitializers.Add(new OperationCorrelationTelemetryInitializer());
+            telemetryConfiguration.TelemetryInitializers.Add(new HttpDependenciesParsingTelemetryInitializer());
+            this.telemetryClient = new TelemetryClient();
         }
 
         public Task StartAsync(CancellationToken cancellation)
         {
-            // TODO: read latest LSN from Blob
             if (this.isRunning)
             {
                 return Task.CompletedTask;
@@ -61,7 +66,7 @@ namespace PxDRAW.SignalR.ChangeFeed
             }
 
             this.isRunning = true;
-            TimeSpan feedPollDelay = TimeSpan.FromSeconds(this.cosmosDbConfiguration.PollingInterval.HasValue ? this.cosmosDbConfiguration.PollingInterval.Value : 5);
+            TimeSpan feedPollDelay = TimeSpan.FromSeconds(this.cosmosDbConfiguration.PollingInterval.HasValue ? this.cosmosDbConfiguration.PollingInterval.Value : DefaultPollingIntervalInSeconds);
             return Task.Run(async () =>
             {
                 this.telemetryClient.TrackEvent($"ChangeFeedReader running.");
@@ -79,14 +84,18 @@ namespace PxDRAW.SignalR.ChangeFeed
                     {
                         ExceptionDispatchInfo exceptionDispatchInfo = null;
                         FeedResponse<Document> readChangesResponse = null;
+                        var operation = this.telemetryClient.StartOperation(new RequestTelemetry() { Name = "ChangeFeedReader.ReadFeed" });
+                        DateTimeOffset feedDependencyStartTime = DateTimeOffset.UtcNow;
                         try
                         {
                             readChangesResponse = await query.ExecuteNextAsync<Document>();
+                            this.telemetryClient.TrackDependency("CosmosDB.ChangeFeed", "ExecuteNextAsync", feedDependencyStartTime, DateTimeOffset.UtcNow.Subtract(feedDependencyStartTime), true);
                             options.RequestContinuation = readChangesResponse.ResponseContinuation;
                         }
                         catch (DocumentClientException ex)
                         {
                             exceptionDispatchInfo = ExceptionDispatchInfo.Capture(ex);
+                            this.telemetryClient.TrackDependency("CosmosDB.ChangeFeed", "ExecuteNextAsync", feedDependencyStartTime, DateTimeOffset.UtcNow.Subtract(feedDependencyStartTime), false);
                         }
 
                         if (exceptionDispatchInfo != null)
@@ -97,6 +106,7 @@ namespace PxDRAW.SignalR.ChangeFeed
                             {
                                  // Most likely, the database or collection was removed while we were enumerating.
                                 this.telemetryClient.TrackException(dcex);
+                                this.telemetryClient.StopOperation(operation);
                                 this.isRunning = false;
                                 break;
                             }
@@ -112,19 +122,21 @@ namespace PxDRAW.SignalR.ChangeFeed
                             }
                             else if (dcex.Message.Contains("Reduce page size and try again."))
                             {
-                                 // Temporary workaround to compare exception message, until server provides better way of handling this case.
-                                 if (!options.MaxItemCount.HasValue)
+                                // Temporary workaround to compare exception message, until server provides better way of handling this case.
+                                if (!options.MaxItemCount.HasValue)
                                 {
                                     options.MaxItemCount = DefaultMaxItemCount;
                                 }
                                 else if (options.MaxItemCount <= 1)
                                 {
                                     this.telemetryClient.TrackEvent($"Cannot reduce maxItemCount further as it's already at {options.MaxItemCount}.");
-                                    exceptionDispatchInfo.Throw();
+                                    this.telemetryClient.TrackException(new Exception("Cannot reduce maxItemCount"));
                                 }
-
-                                 options.MaxItemCount /= 2;
-                                 this.telemetryClient.TrackEvent($"Reducing maxItemCount, new value: {options.MaxItemCount}.");
+                                else
+                                {
+                                    options.MaxItemCount /= 2;
+                                    this.telemetryClient.TrackEvent($"Reducing maxItemCount, new value: {options.MaxItemCount}.");
+                                }
                             }
                             else
                             {
@@ -140,12 +152,31 @@ namespace PxDRAW.SignalR.ChangeFeed
                             if (results.Count > 0)
                             {
                                 this.telemetryClient.TrackTrace($"Detected {results.Count} documents.");
-                                await this.signalRHubContext.Clients.All.SendAsync("Changes", JsonConvert.SerializeObject(results));
+                                DateTimeOffset signalRDependencyStartTime = DateTimeOffset.UtcNow;
+                                try
+                                {
+                                    await this.signalRHubContext.Clients.All.SendAsync("Changes", JsonConvert.SerializeObject(results));
+                                    this.telemetryClient.TrackDependency("SignalR", "SendAsync", signalRDependencyStartTime, DateTimeOffset.UtcNow.Subtract(signalRDependencyStartTime), true);
+                                }
+                                catch (Exception ex)
+                                {
+                                    this.telemetryClient.TrackException(ex);
+                                    this.telemetryClient.TrackDependency("SignalR", "SendAsync", signalRDependencyStartTime, DateTimeOffset.UtcNow.Subtract(signalRDependencyStartTime), false);
+                                }
+                                this.telemetryClient.StopOperation(operation);
+                                this.telemetryClient.Flush();
                             }
                             else
                             {
+                                this.telemetryClient.StopOperation(operation);
+                                this.telemetryClient.Flush();
                                 await Task.Delay(feedPollDelay, cancellation);
                             }
+                        }
+                        else
+                        {
+                            this.telemetryClient.StopOperation(operation);
+                            this.telemetryClient.Flush();
                         }
                     }
                     while (query.HasMoreResults && this.isRunning);
@@ -156,6 +187,7 @@ namespace PxDRAW.SignalR.ChangeFeed
         public Task StopAsync(CancellationToken cancellation)
         {
             this.telemetryClient.TrackEvent($"ChangeFeedReader shutting down.");
+            this.telemetryClient.Flush();
             this.isRunning = false;
             return Task.CompletedTask;
         }
