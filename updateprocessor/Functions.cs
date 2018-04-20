@@ -33,8 +33,11 @@ namespace pxdraw.updateprocessor
                 {
                     try
                     {
-                        var pixel = Pixel.FromDocument(doc);
-                        board.InsertPixel(pixel);
+                        var pixels = Pixel.PixelsFromDocument(doc);
+                        foreach(var pixel in pixels)
+                        {
+                            board.InsertPixel(pixel);
+                        }
                     }
                     catch (Exception e)
                     {

@@ -97,8 +97,15 @@ namespace pxdraw.api
         /// <param name="context"></param>
         /// <returns></returns>
         [FunctionName("user")]
-        public static async Task<HttpResponseMessage> GetUser([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequestMessage req, ILogger log, ExecutionContext context)
+        public static async Task<HttpResponseMessage> GetUser([HttpTrigger(AuthorizationLevel.Anonymous, "get", "options", Route = null)] HttpRequestMessage req, ILogger log, ExecutionContext context)
         {
+            if (req.Method == HttpMethod.Options)
+            {
+                var res = req.CreateResponse();
+                ApplyCORSRules(req, res);
+                return res;
+            }
+
             string userId;
             string idp;
 
@@ -252,6 +259,8 @@ namespace pxdraw.api
                 res.Headers.Add("Access-Control-Allow-Origin", origin);
                 res.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
                 res.Headers.Add("Access-Control-Allow-Headers", "Content-Type");
+                res.Headers.Add("Access-Control-Allow-Headers", "x-ms-client-principal-id");
+                res.Headers.Add("Access-Control-Allow-Headers", "x-ms-client-principal-idp");
             }
         }
     }

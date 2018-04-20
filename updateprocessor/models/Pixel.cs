@@ -21,14 +21,9 @@ namespace pxdraw.updateprocessor.models
         [JsonProperty("lastUpdated")]
         public DateTime LastUpdated { get; set; }
 
-        public static Pixel FromDocument(Document doc)
+        public static Pixel[] PixelsFromDocument(Document doc)
         {
-            return new Pixel
-            {
-                X = Math.Max(0, doc.GetPropertyValue<int>("x")),
-                Y = Math.Max(0, doc.GetPropertyValue<int>("y")),
-                Color = doc.GetPropertyValue<int>("color"),
-            };
+            return doc.GetPropertyValue<Pixel[]>("items");
         }
     }
 }

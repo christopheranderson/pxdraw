@@ -10,6 +10,7 @@ namespace pxdraw.api.services
 {
     class PixelService
     {
+        private readonly int BATCH_SIZE = 300;
         private DocumentClient _Client;
         private Uri _CollectionUri;
         private static PixelService _Singleton;
@@ -30,14 +31,32 @@ namespace pxdraw.api.services
             return _Singleton;
         }
 
+        public async Task Insert(Pixel[] pixels)
+        {
+            var batches = CreateBatches(pixels);
+            foreach(var batch in batches)
+            {
+                await InsertBatch(batch);
+            }
+        }
+
         public async Task InsertBatch(Pixel[] pixels)
         {
-            List<Task> tasks = new List<Task>(pixels.Length);
-            foreach(var pixel in pixels)
+            dynamic batch = new {
+                items = pixels
+            };
+
+            await _Client.CreateDocumentAsync(_CollectionUri, batch);
+        }
+
+        private List<Pixel[]> CreateBatches(Pixel[] pixels)
+        {
+            var list = new List<Pixel[]>();
+            for(var i = 0; i < pixels.Length; i = i + BATCH_SIZE)
             {
-                tasks.Add(_Client.CreateDocumentAsync(_CollectionUri, pixel));
+                list.Add(pixels.Skip(i).Take(Math.Min(BATCH_SIZE, pixels.Length - i)).ToArray());
             }
-            await Task.WhenAll(tasks);
+            return list;
         }
 
         private static DocumentClient CreateDefaultClient()

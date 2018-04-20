@@ -201,6 +201,11 @@ export class Canvas {
                 this.historyBuffer.push(update);
                 this.paintToCanvas(update);
             });
+            const pendingUpdates = this.drawingBuffer.getAllUpdates();
+            if(pendingUpdates.length > 300) {
+                this.params.onPixelUpdatesSubmitted(pendingUpdates);
+                this.drawingBuffer.reset();
+            }
         } else {
             if (this.touchState === TouchStates.SingleDown) {
                 if (this.zoomScale < Canvas.UNSTABLE_ZOOM) {
