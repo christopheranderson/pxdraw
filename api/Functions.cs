@@ -32,7 +32,11 @@ namespace pxdraw.api
         ///     "getBoardEndpoint":string - uri for the board blob,
         ///     "loginEndpoint":string - uri for the login endpoint,
         ///     "updatePixelEndpoint":string - uri for the update pixel endpoint,
-        ///     "websocketEndpoint":string - uri for the SignalR pixel update notifications endpoint
+        ///     "websocketEndpoint":string - uri for the SignalR pixel update notifications endpoint,
+        ///     "userEndpoint":string - uri for the User info endpoint,
+        ///     "adminEndpoint":string - uri for the admin login endpoint,
+        ///     "logoutEndpoint":string - uri for the logout endpoint,
+        ///     "throttleRate":int - rate in seconds of user pixel updates
         /// }
         /// 
         /// </summary>
@@ -52,6 +56,7 @@ namespace pxdraw.api
                 string userEndpoint = Environment.GetEnvironmentVariable("PXDRAW_USER_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_USER_ENDPOINT environment variable does not exist.");
                 string adminEndpoint = Environment.GetEnvironmentVariable("PXDRAW_ADMIN_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_ADMIN_ENDPOINT environment variable does not exist.");
                 string logoutEndpoint = Environment.GetEnvironmentVariable("PXDRAW_LOGOUT_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_LOGOUT_ENDPOINT environment variable does not exist.");
+                int throttleRate = GetThrottleRate();
 
                 var metadata = new Metadata
                 {
@@ -61,6 +66,7 @@ namespace pxdraw.api
                     WebsocketEndpoint = websocketEndpoint,
                     UserEndpoint = userEndpoint,
                     LogoutEndpoint = logoutEndpoint,
+                    ThrottleRate = throttleRate,
                 };
 
                 var res = req.CreateResponse(HttpStatusCode.OK, metadata);
@@ -223,9 +229,9 @@ namespace pxdraw.api
                     return res;
                 }
 
-                if(!user.IsAdmin && user.LastInsert > time.AddSeconds(-30))
+                if(!user.IsAdmin && user.LastInsert > time.AddSeconds(-1 * GetThrottleRate()))
                 {
-                    var res = req.CreateErrorResponse((HttpStatusCode)429, $"User can only insert 1 pixel at a time. Refer to {context.InvocationId} for details.");
+                    var res = req.CreateErrorResponse((HttpStatusCode)429, $"Too many pixel inserts. Refer to {context.InvocationId} for details.");
                     ApplyCORSRules(req, res);
                     return res;
                 }
@@ -278,15 +284,21 @@ namespace pxdraw.api
 
         private static void ApplyCORSRules(HttpRequestMessage req, HttpResponseMessage res)
         {
-            var origin = req.Headers.GetValues("origin").FirstOrDefault();
-
             if (req.Headers.Contains("Origin"))
             {
+                var origin = req.Headers.GetValues("origin").FirstOrDefault();
                 res.Headers.Add("Access-Control-Allow-Credentials", "true");
                 res.Headers.Add("Access-Control-Allow-Origin", origin);
                 res.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
                 res.Headers.Add("Access-Control-Allow-Headers", "Content-Type");
             }
+        }
+
+        private static int GetThrottleRate()
+        {
+            int throttleRate = 30;
+            Int32.TryParse(Environment.GetEnvironmentVariable("PXDRAW_THROTTLE_RATE"), out throttleRate);
+            return throttleRate;
         }
     }
 }
