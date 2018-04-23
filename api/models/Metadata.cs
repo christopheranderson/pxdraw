@@ -19,7 +19,9 @@ namespace pxdraw.api.models
         public string WebsocketEndpoint { get; set; }
         [JsonProperty("userEndpoint", NullValueHandling = NullValueHandling.Include)]
         public string UserEndpoint { get; set; }
-        [JsonProperty("logoutEndpoint")]
+        [JsonProperty("logoutEndpoint", NullValueHandling = NullValueHandling.Include)]
         public string LogoutEndpoint { get; set; }
+        [JsonProperty("throttleRate", NullValueHandling = NullValueHandling.Include)]
+        public int ThrottleRate { get; set; }
     }
 }
