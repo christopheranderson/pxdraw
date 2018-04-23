@@ -121,10 +121,11 @@ export class Main {
 
             // TODO remove test code
             // this.user = {
-            //     isAdmin: false,
+            //     isAdmin: true,
             //     lastUpdate: new Date(new Date().getTime() - 3000),
             //     id: 'userid'
             // }
+
             this.isLoggedIn(true);
             this.isAdmin(this.user.isAdmin);
             this.enableDraw(true);
@@ -143,12 +144,8 @@ export class Main {
     }
 
     private processFetchBoardResponse(data: ArrayBuffer) {
-        const start = new Date().getTime();
-
         const board8Uint = Main.unpackBoardBlob(new Uint8Array(data));
-        this.canvas.renderBoard(board8Uint);
-
-        console.log(`processFetchBoardResponse took ${new Date().getTime() - start} ms`);
+        this.canvas.queueBoardUpdate(board8Uint);
     }
 
     private onPixelUpdateFromRemote(data: OnPixelUpdateData) {
