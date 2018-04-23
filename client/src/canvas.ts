@@ -20,6 +20,13 @@ export enum DrawModes {
     Disabled
 }
 
+interface Rect {
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number
+}
+
 export class Canvas {
     public static readonly BOARD_WIDTH_PX = 1000;
     public static readonly BOARD_HEIGHT_PX = 1000;
@@ -90,10 +97,11 @@ export class Canvas {
     // 32 bit colors stored as AGBR (rgba in reverse).
     private writeBuffer: Uint32Array;
 
+    // TODO: Remove this once LSN supported. Note: historyBuffer indefinitely grows.
     private historyBuffer: PixelUpdate[] = [];
 
 
-    // private queuedUpdate: PixelUpdate[] = [];
+    private drawingQueue: PixelUpdate[] = [];
 
     public constructor(params: CanvasParameters) {
         this.drawMode = ko.observable(DrawModes.Disabled);
@@ -162,6 +170,8 @@ export class Canvas {
         this.hasMouseMoved = false;
 
         this.centerCanvas();
+
+        this.startRenderingLoop(this.flushDrawingQueue.bind(this));
     }
 
     private centerCanvas() {
@@ -181,6 +191,35 @@ export class Canvas {
         });
         this.panZoomElement.panzoom('pan', panX, panY, { relative: true });
         this.panZoomElement.panzoom('option', 'minScale', zoom);
+    }
+
+    private flushDrawingQueue() {
+        let xmin: number = Canvas.BOARD_WIDTH_PX;
+        let xmax: number = 0;
+        let ymin: number = Canvas.BOARD_HEIGHT_PX;
+        let ymax: number = 0;
+
+        $.each(this.drawingQueue, (index: number, update: PixelUpdate) => {
+            this.paintToCanvas(update);
+            xmin = Math.min(xmin, update.x);
+            ymin = Math.min(ymin, update.y);
+            xmax = Math.max(xmax, update.x + 1);
+            ymax = Math.max(ymax, update.y + 1);
+        });
+
+        if (this.drawingQueue.length > 0) {
+            this.updateViewportCanvas({ x1: xmin, y1: ymin, x2: xmax, y2: ymax });
+        }
+
+        this.drawingQueue = [];
+    }
+
+    private startRenderingLoop(fn:()=> void) {
+        const executeFn = (ts: number) => {
+            fn();
+            requestId = window.requestAnimationFrame(executeFn);
+        };
+        let requestId = window.requestAnimationFrame(executeFn);
     }
 
     private selectColorIndex(index: number) {
@@ -222,8 +261,7 @@ export class Canvas {
         if (this.drawMode() === DrawModes.Freehand && this.touchState === TouchStates.SingleDown) {
             const updates = this.drawingBuffer.penMove(position, this.selectedColorIndex());
             $.each(updates, (index: number, update: PixelUpdate) => {
-                this.historyBuffer.push(update);
-                this.paintToCanvas(update);
+                this.queuePixelUpdate(update);
             });
             const pendingUpdates = this.drawingBuffer.getAllUpdates();
             if(pendingUpdates.length > 300) {
@@ -276,8 +314,7 @@ export class Canvas {
         if (this.drawMode() === DrawModes.Freehand || this.drawMode() === DrawModes.Pixel) {
             const updates = this.drawingBuffer.penDown(position, this.selectedColorIndex());
             $.each(updates, (index: number, update: PixelUpdate) => {
-                this.historyBuffer.push(update);
-                this.paintToCanvas(update);
+                this.queuePixelUpdate(update);
             });
         }
     }
@@ -306,8 +343,7 @@ export class Canvas {
             if (this.drawMode() === DrawModes.Pixel || this.drawMode() === DrawModes.Freehand) {
                 const updates = this.drawingBuffer.penUp(position, this.selectedColorIndex());
                 $.each(updates, (index: number, update: PixelUpdate) => {
-                    this.historyBuffer.push(update);
-                    this.paintToCanvas(update);
+                    this.queuePixelUpdate(update);
                 });
                 this.params.onPixelUpdatesSubmitted(this.drawingBuffer.getAllUpdates());
             }
@@ -330,7 +366,6 @@ export class Canvas {
         d[2] = color.b;
         d[3] = color.a;
         this.context.putImageData(imgData, update.x, update.y);
-        this.updateViewportCanvas(update);
     }
 
     /**
@@ -348,9 +383,8 @@ export class Canvas {
     }
 
     public queuePixelUpdate(data: PixelUpdate) {
-        // for now, just draw it
         this.historyBuffer.push(data);
-        this.paintToCanvas(data);
+        this.drawingQueue.push(data);
     }
 
     /**
@@ -386,7 +420,6 @@ export class Canvas {
         let y = 0;
         for (let i = 0; i < board.byteLength; i++) {
             const color = board[i];
-            // this.paintPixel({ x:x, y:y }, color);
             this.paintToBuffer({ x: x, y: y }, color);
 
             if (++x >= Canvas.BOARD_WIDTH_PX) {
@@ -410,9 +443,9 @@ export class Canvas {
 
     /**
      * Copy canvas onto viewport canvas (this addresses blurred Edge pixel issue)
-     * @param sourcePosition if specified: only copy one pixel and don't clear rect for perf
+     * @param updateRect if specified: only copy this rectangle (in source coordinates)
      */
-    private updateViewportCanvas(sourcePosition?: Point2D) {
+    private updateViewportCanvas(updateRect?: Rect) {
         const start = new Date();
         const c = this.canvas.getBoundingClientRect();
         const v = this.viewportCanvas.getBoundingClientRect();
@@ -422,7 +455,7 @@ export class Canvas {
         // More precise and self-contained than using this.zoomScale
         const zoomScale = c.width / Canvas.BOARD_WIDTH_PX;
 
-        if (!sourcePosition) {
+        if (!updateRect) {
             this.viewportContext.clearRect(0, 0, v.width, v.height);
         }
 
@@ -435,15 +468,15 @@ export class Canvas {
         let dw = Canvas.BOARD_WIDTH_PX * zoomScale;
         let dh = Canvas.BOARD_HEIGHT_PX * zoomScale;
 
-        if (sourcePosition) {
-            sx = sourcePosition.x;
-            sy = sourcePosition.y;
-            sw = 1;
-            sh = 1;
-            dx = cx + sourcePosition.x * zoomScale;
-            dy = cy + sourcePosition.y * zoomScale;
-            dw = zoomScale;
-            dh = zoomScale;
+        if (updateRect) {
+            sx = updateRect.x1;
+            sy = updateRect.y1;
+            sw = updateRect.x2 - updateRect.x1;
+            sh = updateRect.y2 - updateRect.y1;
+            dx = cx + updateRect.x1 * zoomScale;
+            dy = cy + updateRect.y1 * zoomScale;
+            dw = sw * zoomScale;
+            dh = sh * zoomScale;
         }
 
         this.viewportContext.mozImageSmoothingEnabled = false;
@@ -451,6 +484,7 @@ export class Canvas {
         (<any>this.viewportContext).msImageSmoothingEnabled = false;
         this.viewportContext.imageSmoothingEnabled = false;
         this.viewportContext.drawImage(this.canvas, sx, sy, sw, sh, dx, dy, dw, dh);
+        console.log('updateViewportCanvas', sx, sy, sw, sh, dx, dy, dw, dh);
         // console.log(`updateViewportCanvas(): ${new Date().getTime() - start.getTime()} ms`);
     }
 }
