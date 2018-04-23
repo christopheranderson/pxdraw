@@ -33,6 +33,7 @@ export class Canvas {
     private static readonly ZOOM_MIN_SCALE = 0.1;
     private static readonly ZOOM_MAX_SCALE = 40;
     private static readonly UNSTABLE_ZOOM = 0.5;
+    private static readonly MIN_MOUSE_MOVE_PX = 5; // minimum mouse move that qualifies as a drag
 
     // 16 colors according to this: http://www.december.com/html/spec/color16codes.html
     private static readonly COLOR_PALETTE_16: CanvasColor[] = [
@@ -85,7 +86,7 @@ export class Canvas {
     private drawingBuffer: DrawingBuffer;
     private touchState: TouchStates;
     private lastMouseDownPosition: Point2D;
-    private hasMouseMoved: boolean;
+    private totalDragDistance: number;
     public drawMode: KnockoutObservable<DrawModes>;
 
     // This array buffer will hold color data to be drawn to the canvas.
@@ -167,7 +168,7 @@ export class Canvas {
         this.drawingBuffer = new DrawingBuffer(this.drawMode() === DrawModes.Freehand);
         this.touchState = TouchStates.Up;
         this.lastMouseDownPosition = null;
-        this.hasMouseMoved = false;
+        this.totalDragDistance = 0;
 
         this.centerCanvas();
 
@@ -214,12 +215,20 @@ export class Canvas {
         this.drawingQueue = [];
     }
 
-    private startRenderingLoop(fn:()=> void) {
+    /**
+     *
+     * @param fn
+     * @return canceling function
+     */
+    private startRenderingLoop(fn:()=> void): () => void {
         const executeFn = (ts: number) => {
             fn();
             requestId = window.requestAnimationFrame(executeFn);
         };
         let requestId = window.requestAnimationFrame(executeFn);
+        return () => {
+            window.cancelAnimationFrame(requestId);
+        };
     }
 
     private selectColorIndex(index: number) {
@@ -232,7 +241,6 @@ export class Canvas {
     }
 
     private onMouseMove(e: MouseEvent | TouchEvent) {
-        this.hasMouseMoved = true;
         let position;
         if (e instanceof MouseEvent) {
             if (e.button !== 0) {
@@ -277,12 +285,14 @@ export class Canvas {
                 const dx = position.x - this.lastMouseDownPosition.x;
                 const dy = position.y - this.lastMouseDownPosition.y;
                 this.panZoomElement.panzoom('pan', dx, dy, { relative: true });
+                this.totalDragDistance += Math.hypot(dx, dy);
             }
         }
     }
 
     private onMouseDown(e: MouseEvent | TouchEvent) {
-        this.hasMouseMoved = false;
+        this.totalDragDistance = 0;
+
         let position;
         if (e instanceof MouseEvent) {
             if (e.button !== 0) {
@@ -340,7 +350,8 @@ export class Canvas {
                 return;
             }
 
-            if (this.drawMode() === DrawModes.Pixel || this.drawMode() === DrawModes.Freehand) {
+            const hasMouseMoved = this.totalDragDistance > Canvas.MIN_MOUSE_MOVE_PX;
+            if ((this.drawMode() === DrawModes.Pixel && !hasMouseMoved) || this.drawMode() === DrawModes.Freehand) {
                 const updates = this.drawingBuffer.penUp(position, this.selectedColorIndex());
                 $.each(updates, (index: number, update: PixelUpdate) => {
                     this.queuePixelUpdate(update);
@@ -484,7 +495,7 @@ export class Canvas {
         (<any>this.viewportContext).msImageSmoothingEnabled = false;
         this.viewportContext.imageSmoothingEnabled = false;
         this.viewportContext.drawImage(this.canvas, sx, sy, sw, sh, dx, dy, dw, dh);
-        console.log('updateViewportCanvas', sx, sy, sw, sh, dx, dy, dw, dh);
+        // console.log('updateViewportCanvas', sx, sy, sw, sh, dx, dy, dw, dh);
         // console.log(`updateViewportCanvas(): ${new Date().getTime() - start.getTime()} ms`);
     }
 }
