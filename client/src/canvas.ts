@@ -103,6 +103,7 @@ export class Canvas {
 
 
     private drawingQueue: PixelUpdate[] = [];
+    private pendingBoard: Uint8Array = null;
 
     public constructor(params: CanvasParameters) {
         this.drawMode = ko.observable(DrawModes.Disabled);
@@ -200,6 +201,14 @@ export class Canvas {
         let ymin: number = Canvas.BOARD_HEIGHT_PX;
         let ymax: number = 0;
 
+        if (this.pendingBoard) {
+            this.renderBoard(this.pendingBoard);
+            xmin = 0;
+            ymin = 0;
+            xmax = Canvas.BOARD_WIDTH_PX;
+            ymax = Canvas.BOARD_HEIGHT_PX;
+        }
+
         $.each(this.drawingQueue, (index: number, update: PixelUpdate) => {
             this.paintToCanvas(update);
             xmin = Math.min(xmin, update.x);
@@ -208,11 +217,12 @@ export class Canvas {
             ymax = Math.max(ymax, update.y + 1);
         });
 
-        if (this.drawingQueue.length > 0) {
+        if (this.drawingQueue.length > 0 || this.pendingBoard) {
             this.updateViewportCanvas({ x1: xmin, y1: ymin, x2: xmax, y2: ymax });
         }
 
         this.drawingQueue = [];
+        this.pendingBoard = null;
     }
 
     /**
@@ -408,12 +418,13 @@ export class Canvas {
             colorIndex = 0;
         }
         const color = this.availableColors()[colorIndex];
-        const dataView = new DataView(new ArrayBuffer(4));
-        dataView.setUint8(0, color.a);
-        dataView.setUint8(1, color.b);
-        dataView.setUint8(2, color.g);
-        dataView.setUint8(3, color.r);
-        return dataView.getUint32(0);
+
+        let result: number = 0;
+        result += color.a << 24;
+        result += color.b << 16;
+        result += color.g << 8;
+        result += color.r;
+        return result;
     }
 
     private paintToBuffer(position: Point2D, color: number) {
@@ -425,7 +436,13 @@ export class Canvas {
         return position.y * Canvas.BOARD_WIDTH_PX + position.x;
     }
 
-    public renderBoard(board: Uint8Array) {
+    public queueBoardUpdate(board: Uint8Array) {
+        this.pendingBoard = board;
+    }
+
+    private renderBoard(board: Uint8Array) {
+        const start = new Date().getTime();
+
         // For now, just draw it directly onto canvas
         let x = 0;
         let y = 0;
@@ -449,7 +466,7 @@ export class Canvas {
         const imageData = new ImageData(this.readBuffer, Canvas.BOARD_WIDTH_PX, Canvas.BOARD_HEIGHT_PX);
         this.context.putImageData(imageData, 0, 0);
 
-        this.updateViewportCanvas();
+        console.log(`renderBoard(): ${new Date().getTime() - start} ms`);
     }
 
     /**
