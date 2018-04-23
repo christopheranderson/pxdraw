@@ -23,6 +23,7 @@ export interface CanvasColor {
     g: number;
     b: number;
     a: number;
+    v32: number;
 }
 
 export interface PixelUpdate extends Point2D {
@@ -124,7 +125,7 @@ export class Main {
             //     isAdmin: true,
             //     lastUpdate: new Date(new Date().getTime() - 3000),
             //     id: 'userid'
-            // }
+            // };
 
             this.isLoggedIn(true);
             this.isAdmin(this.user.isAdmin);
@@ -213,12 +214,14 @@ export class Main {
      * @return result is a [width * height] array of 1-byte
      */
     private static unpackBoardBlob(blob: Uint8Array): Uint8Array {
+        const start = performance.now();
         const result = new Uint8Array(Canvas.BOARD_WIDTH_PX * Canvas.BOARD_HEIGHT_PX);
 
         for (var i = 0; i < blob.byteLength; i++) {
             result[i * 2] = blob[i] >> 4;
             result[i * 2 + 1] = blob[i] & 0xF;
         }
+        console.log(`unpackBoardBlob: ${performance.now() - start} ms`);
         return result;
     }
 
