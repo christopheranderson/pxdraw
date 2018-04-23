@@ -436,7 +436,7 @@ export class Canvas {
     }
 
     private renderBoard(board: Uint8Array) {
-        const start = new Date().getTime();
+        const start = performance.now();
 
         // For now, just draw it directly onto canvas
         let x = 0;
@@ -461,7 +461,7 @@ export class Canvas {
         const imageData = new ImageData(this.readBuffer, Canvas.BOARD_WIDTH_PX, Canvas.BOARD_HEIGHT_PX);
         this.context.putImageData(imageData, 0, 0);
 
-        console.log(`renderBoard(): ${new Date().getTime() - start} ms`);
+        console.log(`renderBoard(): ${performance.now() - start} ms`);
     }
 
     /**
@@ -469,7 +469,6 @@ export class Canvas {
      * @param updateRect if specified: only copy this rectangle (in source coordinates)
      */
     private updateViewportCanvas(updateRect?: Rect) {
-        const start = new Date();
         const c = this.canvas.getBoundingClientRect();
         const v = this.viewportCanvas.getBoundingClientRect();
         const cx = c.left - v.left;
@@ -508,6 +507,5 @@ export class Canvas {
         this.viewportContext.imageSmoothingEnabled = false;
         this.viewportContext.drawImage(this.canvas, sx, sy, sw, sh, dx, dy, dw, dh);
         // console.log('updateViewportCanvas', sx, sy, sw, sh, dx, dy, dw, dh);
-        // console.log(`updateViewportCanvas(): ${new Date().getTime() - start.getTime()} ms`);
     }
 }

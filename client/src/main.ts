@@ -278,7 +278,7 @@ export class Main {
      * @param startLsn
      */
     private replayAndCleanupUpdates(startLsn: number) {
-        const start = new Date().getTime();
+        const start = performance.now();
 
         const validUpdates:OnPixelUpdateData[] = [];
         console.log(`Replaying ${this.receivedUpdates.length} received updates`);
@@ -293,7 +293,7 @@ export class Main {
         }
         this.receivedUpdates = validUpdates;
 
-        console.log(`Replayed ${count} updates took ${new Date().getTime() - start} ms`);
+        console.log(`Replayed ${count} updates took ${performance.now() - start} ms`);
     }
 
     private async submitPixelUpdates(updates: PixelUpdate[]):Promise<{}> {
