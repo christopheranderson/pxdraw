@@ -330,7 +330,7 @@ export class Canvas {
         d[2] = color.b;
         d[3] = color.a;
         this.context.putImageData(imgData, update.x, update.y);
-        this.updateViewportCanvas();
+        this.updateViewportCanvas(update);
     }
 
     /**
@@ -408,7 +408,11 @@ export class Canvas {
         this.updateViewportCanvas();
     }
 
-    private updateViewportCanvas() {
+    /**
+     * Copy canvas onto viewport canvas (this addresses blurred Edge pixel issue)
+     * @param sourcePosition if specified: only copy one pixel and don't clear rect for perf
+     */
+    private updateViewportCanvas(sourcePosition?: Point2D) {
         const start = new Date();
         const c = this.canvas.getBoundingClientRect();
         const v = this.viewportCanvas.getBoundingClientRect();
@@ -418,16 +422,35 @@ export class Canvas {
         // More precise and self-contained than using this.zoomScale
         const zoomScale = c.width / Canvas.BOARD_WIDTH_PX;
 
-        this.viewportContext.clearRect(0, 0, v.width, v.height);
+        if (!sourcePosition) {
+            this.viewportContext.clearRect(0, 0, v.width, v.height);
+        }
+
+        let sx = 0;
+        let sy = 0;
+        let sw = Canvas.BOARD_WIDTH_PX;
+        let sh = Canvas.BOARD_HEIGHT_PX;
+        let dx = cx;
+        let dy = cy;
+        let dw = Canvas.BOARD_WIDTH_PX * zoomScale;
+        let dh = Canvas.BOARD_HEIGHT_PX * zoomScale;
+
+        if (sourcePosition) {
+            sx = sourcePosition.x;
+            sy = sourcePosition.y;
+            sw = 1;
+            sh = 1;
+            dx = cx + sourcePosition.x * zoomScale;
+            dy = cy + sourcePosition.y * zoomScale;
+            dw = zoomScale;
+            dh = zoomScale;
+        }
 
         this.viewportContext.mozImageSmoothingEnabled = false;
         this.viewportContext.webkitImageSmoothingEnabled = false;
         (<any>this.viewportContext).msImageSmoothingEnabled = false;
         this.viewportContext.imageSmoothingEnabled = false;
-        this.viewportContext.drawImage(this.canvas,
-            0, 0, Canvas.BOARD_WIDTH_PX, Canvas.BOARD_HEIGHT_PX,
-            cx, cy, Canvas.BOARD_WIDTH_PX * zoomScale, Canvas.BOARD_HEIGHT_PX * zoomScale);
-
-        console.log(`updateViewportCanvas(): ${new Date().getTime() - start.getTime()} ms`);
+        this.viewportContext.drawImage(this.canvas, sx, sy, sw, sh, dx, dy, dw, dh);
+        // console.log(`updateViewportCanvas(): ${new Date().getTime() - start.getTime()} ms`);
     }
 }
