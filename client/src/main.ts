@@ -23,6 +23,7 @@ export interface CanvasColor {
     g: number;
     b: number;
     a: number;
+    v32: number;
 }
 
 export interface PixelUpdate extends Point2D {
@@ -121,10 +122,11 @@ export class Main {
 
             // TODO remove test code
             // this.user = {
-            //     isAdmin: false,
+            //     isAdmin: true,
             //     lastUpdate: new Date(new Date().getTime() - 3000),
             //     id: 'userid'
-            // }
+            // };
+
             this.isLoggedIn(true);
             this.isAdmin(this.user.isAdmin);
             this.enableDraw(true);
@@ -143,12 +145,8 @@ export class Main {
     }
 
     private processFetchBoardResponse(data: ArrayBuffer) {
-        const start = new Date().getTime();
-
         const board8Uint = Main.unpackBoardBlob(new Uint8Array(data));
-        this.canvas.renderBoard(board8Uint);
-
-        console.log(`processFetchBoardResponse took ${new Date().getTime() - start} ms`);
+        this.canvas.queueBoardUpdate(board8Uint);
     }
 
     private onPixelUpdateFromRemote(data: OnPixelUpdateData) {
@@ -216,12 +214,14 @@ export class Main {
      * @return result is a [width * height] array of 1-byte
      */
     private static unpackBoardBlob(blob: Uint8Array): Uint8Array {
+        const start = performance.now();
         const result = new Uint8Array(Canvas.BOARD_WIDTH_PX * Canvas.BOARD_HEIGHT_PX);
 
         for (var i = 0; i < blob.byteLength; i++) {
             result[i * 2] = blob[i] >> 4;
             result[i * 2 + 1] = blob[i] & 0xF;
         }
+        console.log(`unpackBoardBlob: ${performance.now() - start} ms`);
         return result;
     }
 
@@ -281,7 +281,7 @@ export class Main {
      * @param startLsn
      */
     private replayAndCleanupUpdates(startLsn: number) {
-        const start = new Date().getTime();
+        const start = performance.now();
 
         const validUpdates:OnPixelUpdateData[] = [];
         console.log(`Replaying ${this.receivedUpdates.length} received updates`);
@@ -296,7 +296,7 @@ export class Main {
         }
         this.receivedUpdates = validUpdates;
 
-        console.log(`Replayed ${count} updates took ${new Date().getTime() - start} ms`);
+        console.log(`Replayed ${count} updates took ${performance.now() - start} ms`);
     }
 
     private async submitPixelUpdates(updates: PixelUpdate[]):Promise<{}> {

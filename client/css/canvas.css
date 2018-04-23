@@ -55,13 +55,21 @@ body {
 }
 
 .nonbordered {
-    border: 1px solid rgba(0,0,0,0);
+    border: 1px solid rgba(0, 0, 0, 0);
 }
 
 .palette-button.selected {
     outline: 2px solid #333333;
     border: 2px solid white;
     margin: 8px;
+}
+
+#viewport-canvas {
+    height: calc(100vh - 85px);
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    z-index: 0;
 }
 
 #canvas-container {
@@ -82,6 +90,9 @@ body {
     image-rendering: optimizeSpeed;
     image-rendering: optimize-contrast;
     -ms-interpolation-mode: nearest-neighbor;
+    opacity: 0;
+    position: relative;
+    z-index: 1000;
 }
 
 #subcanvas {
