@@ -48,8 +48,25 @@ export class Canvas {
     ];
 
     private zoomScale = 1;
+
+    /*
+     * Issue: the Edge browser will blur pixels (anti-aliasing) when zooming in the main canvas (this.canvas).
+     * In order to address this limitation, a secondary canvas (this.viewportCanvas) is placed right behind the
+     * main canvas in the DOM.
+     * The main canvas is still in the front in order to receive all mouse events (zoom, pan, click, drag).
+     * Drawing is still done on the main canvas, but any change to main canvas triggers a copy to the viewport canvas
+     * using DrawImage, which draws at the correct zoom scale non-blurred on Edge.
+     * Main canvas is transparent (opacity 0), in order to show the content of the viewport canvas.
+     * The viewport canvas is never transformed like the main canvas when zooming and panning: its scale is
+     * always 1 and position is fixed and covers the main canvas container. We use css position: absolute, but
+     * set z-index lower than main canvas z-index, in order for the mouse events to be sent to the main canvas and not
+     * the viewport canvas.
+     */
     private canvas: HTMLCanvasElement;
     private context: CanvasRenderingContext2D;
+    private viewportCanvas: HTMLCanvasElement;
+    private viewportContext: CanvasRenderingContext2D;
+
     private currentPositionStr: KnockoutObservable<string>;
     private availableColors: KnockoutObservableArray<CanvasColor>;
     private selectedColorIndex: KnockoutObservable<number>;
@@ -88,7 +105,8 @@ export class Canvas {
 
         this.canvas = <HTMLCanvasElement>document.getElementById('canvas');
         this.context = this.canvas.getContext('2d');
-        this.context.imageSmoothingEnabled = false;
+        this.viewportCanvas = <HTMLCanvasElement>document.getElementById('viewport-canvas');
+        this.viewportContext = this.viewportCanvas.getContext('2d');
 
         this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this), false);
         this.canvas.addEventListener('touchstart', this.onMouseDown.bind(this), false);
@@ -98,6 +116,11 @@ export class Canvas {
         this.canvas.addEventListener('touchmove', this.onMouseMove.bind(this), false);
 
         this.canvasContainerElement = $('#canvas-container');
+
+        // Viewport canvas size matches canvas container size
+        this.viewportCanvas.width = this.canvasContainerElement.width();
+        this.viewportCanvas.height = this.canvasContainerElement.height();
+
         this.panZoomElement = this.canvasContainerElement.find('#canvas').panzoom({
             cursor: 'default',
             which: 3,
@@ -119,6 +142,7 @@ export class Canvas {
 
         this.panZoomElement.on('panzoomchange', (e: any, panzoom: any, transform: number[]) => {
             this.zoomScale = transform[0];
+            this.updateViewportCanvas();
         });
 
         $('#coordinates-container').draggable({ axis: 'y', containment: "#canvas-container", scroll: false });
@@ -306,6 +330,7 @@ export class Canvas {
         d[2] = color.b;
         d[3] = color.a;
         this.context.putImageData(imgData, update.x, update.y);
+        this.updateViewportCanvas();
     }
 
     /**
@@ -379,5 +404,30 @@ export class Canvas {
         // Now paint over canvas
         const imageData = new ImageData(this.readBuffer, Canvas.BOARD_WIDTH_PX, Canvas.BOARD_HEIGHT_PX);
         this.context.putImageData(imageData, 0, 0);
+
+        this.updateViewportCanvas();
+    }
+
+    private updateViewportCanvas() {
+        const start = new Date();
+        const c = this.canvas.getBoundingClientRect();
+        const v = this.viewportCanvas.getBoundingClientRect();
+        const cx = c.left - v.left;
+        const cy = c.top - v.top;
+
+        // More precise and self-contained than using this.zoomScale
+        const zoomScale = c.width / Canvas.BOARD_WIDTH_PX;
+
+        this.viewportContext.clearRect(0, 0, v.width, v.height);
+
+        this.viewportContext.mozImageSmoothingEnabled = false;
+        this.viewportContext.webkitImageSmoothingEnabled = false;
+        (<any>this.viewportContext).msImageSmoothingEnabled = false;
+        this.viewportContext.imageSmoothingEnabled = false;
+        this.viewportContext.drawImage(this.canvas,
+            0, 0, Canvas.BOARD_WIDTH_PX, Canvas.BOARD_HEIGHT_PX,
+            cx, cy, Canvas.BOARD_WIDTH_PX * zoomScale, Canvas.BOARD_HEIGHT_PX * zoomScale);
+
+        console.log(`updateViewportCanvas(): ${new Date().getTime() - start.getTime()} ms`);
     }
 }
