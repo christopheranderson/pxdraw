@@ -37,22 +37,22 @@ export class Canvas {
 
     // 16 colors according to this: http://www.december.com/html/spec/color16codes.html
     private static readonly COLOR_PALETTE_16: CanvasColor[] = [
-        { r: 0, g: 0, b: 0, a: 255 }, // black
-        { r: 128, g: 128, b: 128, a: 255 }, // gray
-        { r: 192, g: 192, b: 192, a: 255 }, // silver
-        { r: 255, g: 255, b: 255, a: 255 }, // white
-        { r: 128, g: 0, b: 0, a: 255 }, // maroon
-        { r: 255, g: 0, b: 0, a: 255 }, // red
-        { r: 128, g: 128, b: 0, a: 255 }, // olive
-        { r: 255, g: 255, b: 0, a: 255 }, // yellow
-        { r: 0, g: 255, b: 0, a: 255 }, //green
-        { r: 0, g: 128, b: 0, a: 255 }, // lime
-        { r: 0, g: 128, b: 128, a: 255 }, // teal
-        { r: 0, g: 255, b: 255, a: 255 }, // aqua
-        { r: 0, g: 0, b: 128, a: 255 }, // navy
-        { r: 0, g: 0, b: 255, a: 255 }, // blue
-        { r: 128, g: 0, b: 128, a: 255 }, // purple
-        { r: 255, g: 0, b: 255, a: 255 } // fuchsia
+        { r: 0, g: 0, b: 0, a: 255, v32: 0 }, // black
+        { r: 128, g: 128, b: 128, a: 255, v32: 0 }, // gray
+        { r: 192, g: 192, b: 192, a: 255, v32: 0 }, // silver
+        { r: 255, g: 255, b: 255, a: 255, v32: 0 }, // white
+        { r: 128, g: 0, b: 0, a: 255, v32: 0 }, // maroon
+        { r: 255, g: 0, b: 0, a: 255, v32: 0 }, // red
+        { r: 128, g: 128, b: 0, a: 255, v32: 0 }, // olive
+        { r: 255, g: 255, b: 0, a: 255, v32: 0 }, // yellow
+        { r: 0, g: 255, b: 0, a: 255, v32: 0 }, //green
+        { r: 0, g: 128, b: 0, a: 255, v32: 0 }, // lime
+        { r: 0, g: 128, b: 128, a: 255, v32: 0 }, // teal
+        { r: 0, g: 255, b: 255, a: 255, v32: 0 }, // aqua
+        { r: 0, g: 0, b: 128, a: 255, v32: 0 }, // navy
+        { r: 0, g: 0, b: 255, a: 255, v32: 0 }, // blue
+        { r: 128, g: 0, b: 128, a: 255, v32: 0 }, // purple
+        { r: 255, g: 0, b: 255, a: 255, v32: 0 } // fuchsia
     ];
 
     private zoomScale = 1;
@@ -106,6 +106,12 @@ export class Canvas {
     private pendingBoard: Uint8Array = null;
 
     public constructor(params: CanvasParameters) {
+        // Pre-calculate palette values to speed up renderBoard()
+        // The internal color palette structure stores colors as AGBR (reversed RGBA) to make writing to the color buffer easier.
+        $.each(Canvas.COLOR_PALETTE_16, (index: number, color: CanvasColor) => {
+            color.v32 = (color.a << 24) + (color.b << 16) + (color.g << 8) + color.r;
+        });
+
         this.drawMode = ko.observable(DrawModes.Disabled);
         this.drawMode.subscribe((newValue: DrawModes) => {
             this.drawingBuffer.isFreehand = newValue === DrawModes.Freehand;
@@ -408,29 +414,6 @@ export class Canvas {
         this.drawingQueue.push(data);
     }
 
-    /**
-     * The internal color palette structure stores colors as AGBR (reversed RGBA) to make writing to the color buffer easier.
-     * @param colorIndex
-     * @return 32-bit ABGR value corresponding to the color index. Use black if unknown.
-     */
-    private colorIndex2ABGR(colorIndex: number) {
-        if (colorIndex < 0 || colorIndex >= this.availableColors().length) {
-            colorIndex = 0;
-        }
-        const color = this.availableColors()[colorIndex];
-
-        return (color.a << 24) + (color.b << 16) + (color.g << 8) + color.r;
-    }
-
-    private paintToBuffer(position: Point2D, color: number) {
-        const i = Canvas.coordinates2BufferIndex(position);
-        this.writeBuffer[i] = this.colorIndex2ABGR(color);
-    }
-
-    private static coordinates2BufferIndex(position: Point2D): number {
-        return position.y * Canvas.BOARD_WIDTH_PX + position.x;
-    }
-
     public queueBoardUpdate(board: Uint8Array) {
         this.pendingBoard = board;
     }
@@ -442,8 +425,8 @@ export class Canvas {
         let x = 0;
         let y = 0;
         for (let i = 0; i < board.byteLength; i++) {
-            const color = board[i];
-            this.paintToBuffer({ x: x, y: y }, color);
+            const color = Canvas.COLOR_PALETTE_16[board[i]];
+            this.writeBuffer[y * Canvas.BOARD_WIDTH_PX + x] = color.v32;
 
             if (++x >= Canvas.BOARD_WIDTH_PX) {
                 x = 0;
@@ -454,7 +437,8 @@ export class Canvas {
         while(this.historyBuffer.length > 0)
         {
             let px = this.historyBuffer.pop();
-            this.paintToBuffer({x: px.x, y: px.y}, px.color);
+            const color = Canvas.COLOR_PALETTE_16[px.color];
+            this.writeBuffer[px.y * Canvas.BOARD_WIDTH_PX + px.x] = color.v32;
         }
 
         // Now paint over canvas
