@@ -65,7 +65,6 @@ body {
 }
 
 #viewport-canvas {
-    height: calc(100vh - 85px);
     position: absolute;
     top: 0px;
     left: 0px;
