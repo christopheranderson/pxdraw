@@ -218,8 +218,9 @@ export class Main {
         const result = new Uint8Array(Canvas.BOARD_WIDTH_PX * Canvas.BOARD_HEIGHT_PX);
 
         for (var i = 0; i < blob.byteLength; i++) {
-            result[i * 2] = blob[i] >> 4;
-            result[i * 2 + 1] = blob[i] & 0xF;
+            const byte = blob[i];
+            result[i * 2] = byte >> 4;
+            result[i * 2 + 1] = byte & 0xF;
         }
         console.log(`unpackBoardBlob: ${performance.now() - start} ms`);
         return result;
