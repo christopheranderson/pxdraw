@@ -98,7 +98,7 @@ export class Canvas {
     // 32 bit colors stored as AGBR (rgba in reverse).
     private writeBuffer: Uint32Array;
 
-    // TODO: Remove this once LSN supported. Note: historyBuffer indefinitely grows.
+    // TODO: Remove this once LSN supported
     private historyBuffer: PixelUpdate[] = [];
 
 
@@ -133,10 +133,6 @@ export class Canvas {
 
         this.canvasContainerElement = $('#canvas-container');
 
-        // Viewport canvas size matches canvas container size
-        this.viewportCanvas.width = this.canvasContainerElement.width();
-        this.viewportCanvas.height = this.canvasContainerElement.height();
-
         this.panZoomElement = this.canvasContainerElement.find('#canvas').panzoom({
             cursor: 'default',
             which: 3,
@@ -163,6 +159,8 @@ export class Canvas {
 
         $('#coordinates-container').draggable({ axis: 'y', containment: "#canvas-container", scroll: false });
 
+        window.onresize = this.onWindowResize.bind(this);
+
         this.currentPositionStr = ko.observable('');
 
         this.availableColors = ko.observableArray(Canvas.COLOR_PALETTE_16);
@@ -177,27 +175,33 @@ export class Canvas {
         this.lastMouseDownPosition = null;
         this.totalDragDistance = 0;
 
-        this.centerCanvas();
+        this.onWindowResize();
 
         this.startRenderingLoop(this.flushDrawingQueue.bind(this));
+    }
+
+    private onWindowResize() {
+        // Viewport canvas size matches canvas container size
+        this.viewportCanvas.width = this.canvasContainerElement.width();
+        this.viewportCanvas.height = this.canvasContainerElement.height();
+        this.centerCanvas();
     }
 
     private centerCanvas() {
         const BORDER_PX = 1;
         const containerWidth = this.canvasContainerElement.width();
         const containerHeight = this.canvasContainerElement.height();
-        const containerPos = this.canvasContainerElement.position();
         let zoomX =  (containerWidth - BORDER_PX) / Canvas.BOARD_WIDTH_PX;
         let zoomY =  (containerHeight - BORDER_PX) / Canvas.BOARD_HEIGHT_PX;
         const zoom = Math.min(zoomX, zoomY);
-
-        let panX = (containerWidth - (Canvas.BOARD_WIDTH_PX *  zoom)) / 2;
-        let panY = (containerHeight - (Canvas.BOARD_HEIGHT_PX * zoom)) / 2;
+        let panX = containerWidth / 2 - (Canvas.BOARD_WIDTH_PX / 2);
+        let panY = containerHeight / 2 - (Canvas.BOARD_HEIGHT_PX / 2);
+        const canvasRect = this.canvas.getBoundingClientRect();
         this.panZoomElement.panzoom('zoom', zoom, {
             animate: false,
-            focal: { clientX: containerPos.left, clientY: containerPos.top }
+            focal: { clientX: canvasRect.left, clientY: canvasRect.top }
         });
-        this.panZoomElement.panzoom('pan', panX, panY, { relative: true });
+        this.panZoomElement.panzoom('pan', panX, panY, { relative: false });
         this.panZoomElement.panzoom('option', 'minScale', zoom);
     }
 

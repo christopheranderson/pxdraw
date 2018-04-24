@@ -1,5 +1,8 @@
 body {
     margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .header {
@@ -35,6 +38,8 @@ body {
 
 .main-area {
     display: flex;
+    flex-grow: 1;
+    overflow: hidden;
 }
 
 .palette-container {
@@ -65,7 +70,6 @@ body {
 }
 
 #viewport-canvas {
-    height: calc(100vh - 85px);
     position: absolute;
     top: 0px;
     left: 0px;
@@ -77,7 +81,6 @@ body {
     background-repeat: repeat;
     margin-left: 10px;
     flex-grow: 1;
-    height: calc(100vh - 86px);
     border-left: 1px solid #cccccc;
 }
 
