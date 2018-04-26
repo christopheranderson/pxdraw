@@ -292,10 +292,8 @@ export class Canvas {
                 this.queuePixelUpdate(update);
             });
             const pendingUpdates = this.drawingBuffer.getAllUpdates();
-            if(pendingUpdates.length > 300) {
-                this.params.onPixelUpdatesSubmitted(pendingUpdates);
-                this.drawingBuffer.reset();
-            }
+            this.params.onPixelUpdatesSubmitted(pendingUpdates);
+            this.drawingBuffer.reset();
         } else {
             if (this.touchState === TouchStates.SingleDown) {
                 if (this.zoomScale < Canvas.UNSTABLE_ZOOM) {
