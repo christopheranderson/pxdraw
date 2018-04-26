@@ -11,8 +11,6 @@ import { Canvas, DrawModes } from "./canvas";
 import { UpdateClient } from "./updateClient";
 import { User } from "./user";
 
-const BATCH_SIZE = 300;
-
 export interface Point2D {
     x: number;
     y: number;
@@ -54,11 +52,15 @@ export class Main {
     private static readonly REFRESH_BOARD_DELAY_MS = 30000;
     private static readonly DRAW_DELAY_S = 30;
     private static readonly TIME_UPDATE_MS = 1000; // Update every second
+    private static readonly MAX_BATCH_SIZE = 300;
+    private static readonly START_BATCH_SIZE = 10;
 
     // state
     public canvas: Canvas;
     private receivedUpdates: OnPixelUpdateData[] = []; // Assume for now they should be ordered by LSN asc
     private nextUpdateTime: Date;
+    private pixelUpdatesQueue: PixelUpdate[] = []; // updates to submit
+    private batchSize: number;
 
     private updateClient: UpdateClient;
     private user: User;
@@ -99,6 +101,7 @@ export class Main {
             this.canvas.drawMode(newValue? DrawModes.Freehand:DrawModes.Pixel);
         });
         this.timerId = 0;
+        this.batchSize = Main.START_BATCH_SIZE;
     }
 
     public async init(){
@@ -169,9 +172,7 @@ export class Main {
      * @param updates
      */
     private onPixelUpdatesFromUI(updates: PixelUpdate[]) {
-        this.submitPixelUpdates(updates).catch((err) => {
-            console.error(err);
-        });
+        this.submitPixelUpdates(updates);
     }
 
     private startUpdateTimer() {
@@ -300,19 +301,29 @@ export class Main {
         console.log(`Replayed ${count} updates took ${performance.now() - start} ms`);
     }
 
-    private async submitPixelUpdates(updates: PixelUpdate[]):Promise<{}> {
+    private submitPixelUpdates(updates: PixelUpdate[]):void {
         const remainingMs = this.getRemainingMsBeforeDraw();
         if (remainingMs > 0 && !this.user.isAdmin) {
             const error = `Must wait another ${remainingMs}ms`;
-            return Promise.reject(new Error(error));
+            return;
         }
-        console.log(`Submitting ${updates.length} updates`);
 
-        const numberOfBatches = updates.length / BATCH_SIZE;
+        // console.log(`Submitting ${updates.length} updates`);
+        this.pixelUpdatesQueue = this.pixelUpdatesQueue.concat(updates);
+        if (this.pixelUpdatesQueue.length > this.batchSize) {
+            this.flushPixelUpdatesQueue().catch((err) => {
+                console.error(err);
+            });
+        }
+    }
+
+    private async flushPixelUpdatesQueue():Promise<{}> {
+        console.log(`flushPixelUpdatesQueue length:${this.pixelUpdatesQueue.length} bathSize:${this.batchSize}`);
+        const numberOfBatches = this.pixelUpdatesQueue.length / this.batchSize;
         const promises = [];
         for(let i = 0; i < numberOfBatches; i++)
         {
-            const data = JSON.stringify(updates.slice(i*BATCH_SIZE, (i+1)*BATCH_SIZE));
+            const data = JSON.stringify(this.pixelUpdatesQueue.slice(i*this.batchSize, (i+1)*this.batchSize));
             promises.push(new Promise((resolve, reject) => {
                 $.ajax({
                     type: 'POST',
@@ -344,6 +355,12 @@ export class Main {
                 });
             }));
         }
+
+        this.pixelUpdatesQueue = [];
+        if (this.batchSize < Main.MAX_BATCH_SIZE) {
+            this.batchSize = Math.min(this.batchSize * 2, Main.MAX_BATCH_SIZE);
+        }
+
         return Promise.all(promises);
     }
 }
