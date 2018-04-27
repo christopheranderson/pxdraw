@@ -256,7 +256,8 @@ export class Main {
 
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
-            xhr.open('GET', this.getBoardEndpoint, true);
+            const nonce = Date.now();
+            xhr.open('GET', `${this.getBoardEndpoint}?t=${nonce}`, true);
             xhr.responseType = 'arraybuffer';
             xhr.addEventListener('load', function () {
                 if (xhr.status === 200) {

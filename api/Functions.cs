@@ -45,7 +45,7 @@ namespace pxdraw.api
         /// <param name="context"></param>
         /// <returns></returns>        
         [FunctionName("metadata")]
-        public static async Task<HttpResponseMessage> Metadata([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)]HttpRequestMessage req, ILogger log, ExecutionContext context)
+        public static async Task<HttpResponseMessage> Metadata([HttpTrigger(AuthorizationLevel.Anonymous, "get", "options", Route = null)]HttpRequestMessage req, ILogger log, ExecutionContext context)
         {
             try
             {
@@ -274,6 +274,12 @@ namespace pxdraw.api
 
             ApplyCORSRules(req, response);
             return response;
+        }
+
+        [FunctionName("canary")]
+        public static void Canary([TimerTrigger("0 */5 * * * *")]TimerInfo myTimer, ILogger log)
+        {
+            log.LogInformation("Function app is running healthy");
         }
 
         private static string HeadersToString(HttpRequestHeaders headers)

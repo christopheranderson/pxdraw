@@ -64,6 +64,12 @@ namespace pxdraw.updateprocessor
             return req.CreateResponse();
         }
 
+        [FunctionName("canary")]
+        public static void Canary([TimerTrigger("0 */5 * * * *")]TimerInfo myTimer, ILogger log)
+        {
+            log.LogInformation("Function app is running healthy");
+        }
+
         private static string GetDefaultConatinerName()
         {
             return Environment.GetEnvironmentVariable("PXDRAW_CONTAINER_NAME") ?? throw new InvalidOperationException("PXDRAW_CONTAINER_NAME environment variable is not present");
