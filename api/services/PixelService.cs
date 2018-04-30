@@ -31,19 +31,21 @@ namespace pxdraw.api.services
             return _Singleton;
         }
 
-        public async Task Insert(Pixel[] pixels)
+        public async Task Insert(Pixel[] pixels, string userId, DateTime time)
         {
             var batches = CreateBatches(pixels);
             foreach(var batch in batches)
             {
-                await InsertBatch(batch);
+                await InsertBatch(batch, userId, time);
             }
         }
 
-        public async Task InsertBatch(Pixel[] pixels)
+        public async Task InsertBatch(Pixel[] pixels, string userId, DateTime time)
         {
             dynamic batch = new {
-                items = pixels
+                items = pixels,
+                userId,
+                time,
             };
 
             await _Client.CreateDocumentAsync(_CollectionUri, batch);
