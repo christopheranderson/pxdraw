@@ -34,6 +34,7 @@ export class Canvas {
     private static readonly ZOOM_MAX_SCALE = 40;
     private static readonly UNSTABLE_ZOOM = 0.5;
     private static readonly MIN_MOUSE_MOVE_PX = 5; // minimum mouse move that qualifies as a drag
+    private static readonly CURSOR_FRIEND_OFFSET = { dx: 20, dy: -15 };
 
     // 16 colors according to this: http://www.december.com/html/spec/color16codes.html
     private static readonly COLOR_PALETTE_16: CanvasColor[] = [
@@ -81,6 +82,7 @@ export class Canvas {
     private params: CanvasParameters;
     private panZoomElement: Panzoom;
     private canvasContainerElement: JQuery<HTMLElement>;
+    private cursorFriend: JQuery<HTMLElement>;
 
     // state
     private drawingBuffer: DrawingBuffer;
@@ -88,6 +90,7 @@ export class Canvas {
     private lastMouseDownPosition: Point2D;
     private totalDragDistance: number;
     public drawMode: KnockoutObservable<DrawModes>;
+    private highlightedPixel: Point2D;
 
     // This array buffer will hold color data to be drawn to the canvas.
     private buffer: ArrayBuffer;
@@ -131,7 +134,10 @@ export class Canvas {
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this), false);
         this.canvas.addEventListener('touchmove', this.onMouseMove.bind(this), false);
 
+        $('body')[0].addEventListener('mousemove', this.onMouseOffCanvas.bind(this), false);
+
         this.canvasContainerElement = $('#canvas-container');
+        this.cursorFriend = $('#cursor-friend');
 
         this.panZoomElement = this.canvasContainerElement.find('#canvas').panzoom({
             cursor: 'default',
@@ -260,14 +266,22 @@ export class Canvas {
         return `rgba(${color.r},${color.g},${color.b},${color.a})`;
     }
 
+    /**
+     * Called when mouse is moving outside of the canvas
+     */
+    private onMouseOffCanvas() {
+        this.cursorFriend.hide();
+        this.currentPositionStr('');
+    }
+
     private onMouseMove(e: MouseEvent | TouchEvent) {
-        let position;
+        let mousePosition: Point2D;
         if (e instanceof MouseEvent) {
             if (e.button !== 0) {
                 // Ignore all but left button down
                 return;
             }
-            position = this.getCanvasCoordinates(e.clientX, e.clientY);
+            mousePosition = { x: e.clientX, y: e.clientY };
 
         } else if (e instanceof TouchEvent) {
             if (e.touches.length > 1 || this.touchState === TouchStates.MultiDown) {
@@ -276,7 +290,7 @@ export class Canvas {
                 return;
             }
             const t = (<TouchEvent>e).touches[0];
-            position = this.getCanvasCoordinates(t.clientX, t.clientY);
+            mousePosition = { x: t.clientX, y: t.clientY };
 
             e.stopImmediatePropagation();
         } else {
@@ -284,7 +298,19 @@ export class Canvas {
             return;
         }
 
-        this.currentPositionStr(`${position.x + 1}, ${position.y + 1}`);
+        const position = this.getCanvasCoordinates(mousePosition.x, mousePosition.y);
+
+        window.requestAnimationFrame(() => {
+            this.cursorFriend
+                .show()
+                .css('left', mousePosition.x + Canvas.CURSOR_FRIEND_OFFSET.dx)
+                .css('top', mousePosition.y + Canvas.CURSOR_FRIEND_OFFSET.dy);
+
+            this.highlightPixel(position);
+
+            this.currentPositionStr(`${position.x + 1}, ${position.y + 1}`);
+        });
+
 
         if (this.drawMode() === DrawModes.Freehand && this.touchState === TouchStates.SingleDown) {
             const updates = this.drawingBuffer.penMove(position, this.selectedColorIndex());
@@ -495,5 +521,45 @@ export class Canvas {
         this.viewportContext.imageSmoothingEnabled = false;
         this.viewportContext.drawImage(this.canvas, sx, sy, sw, sh, dx, dy, dw, dh);
         // console.log('updateViewportCanvas', sx, sy, sw, sh, dx, dy, dw, dh);
+    }
+
+    private highlightPixel(position: Point2D) {
+        this.clearHighlightedPixel();
+
+        const c = this.canvas.getBoundingClientRect();
+        const v = this.viewportCanvas.getBoundingClientRect();
+        const cx = c.left - v.left;
+        const cy = c.top - v.top;
+
+        // More precise and self-contained than using this.zoomScale
+        const zoomScale = c.width / Canvas.BOARD_WIDTH_PX;
+
+        const imgSrcData = this.context.getImageData(position.x, position.y, 1, 1);
+        const dSrc = imgSrcData.data;
+
+        const imgData = this.context.createImageData(zoomScale, zoomScale);
+        const d = imgData.data;
+        for (let i=0; i<d.length; i+=4) {
+            // Make color darker
+            d[i] = dSrc[0] / 2;
+            d[i + 1] = dSrc[1] / 2;
+            d[i + 2] = dSrc[2] / 2;
+            d[i + 3] = dSrc[3];
+        }
+        this.viewportContext.putImageData(imgData, cx + position.x * zoomScale + 1,  cy + position.y * zoomScale + 1);
+        this.highlightedPixel = position;
+    }
+
+    private clearHighlightedPixel() {
+        if (!this.highlightedPixel) {
+            return;
+        }
+        this.updateViewportCanvas({
+            x1: this.highlightedPixel.x - 1,
+            y1: this.highlightedPixel.y - 1,
+            x2: this.highlightedPixel.x + 2,
+            y2: this.highlightedPixel.y + 2
+        });
+        this.highlightedPixel = null;
     }
 }
