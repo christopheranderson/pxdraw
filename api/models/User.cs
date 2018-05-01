@@ -15,6 +15,8 @@ namespace pxdraw.api.models
         public DateTime LastInsert { get; set; }
         [JsonProperty("isAdmin")]
         public bool IsAdmin { get; set; }
+        [JsonProperty("isBlocked")]
+        public bool IsBlocked { get; set; }
 
         public bool CanInsertPixel(int timeoutDurationInSeconds)
         {

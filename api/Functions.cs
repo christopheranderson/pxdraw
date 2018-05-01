@@ -207,11 +207,6 @@ namespace pxdraw.api
             try
             {
                 pixels = await req.Content.ReadAsAsync<Pixel[]>();
-                foreach(var pixel in pixels)
-                {
-                    pixel.UserId = userId;
-                    pixel.LastUpdated = time;
-                }
             }
             catch (Exception err)
             {
@@ -221,6 +216,7 @@ namespace pxdraw.api
                 return res;
             }
 
+            // Block bad users
             // User throttling
             // Admin should be the only one allowed to insert more than 1 pixel
             // Admin should be hte only one allowed to insert more often than 30 seconds
@@ -228,6 +224,20 @@ namespace pxdraw.api
             {
                 UserService us = UserService.GetDefaultSingleton();
                 User user = await us.GetOrCreateUser(userId);
+
+                if(user.IsBlocked == true)
+                {
+                    // log for telemetry and then silently return their results.
+                    log.LogInformation($"User {userId} is blocked.");
+                    var fakeRes = req.CreateResponse(HttpStatusCode.Created, new
+                    {
+                        timestamp = time
+                    });
+
+                    ApplyCORSRules(req, fakeRes);
+                    return fakeRes;
+                }
+
                 user.IsAdmin = (idp == "aad"); // All users logged in through AAD are admins, everyone else is not
                 if(pixels.Length > 1 && !user.IsAdmin)
                 {
@@ -258,7 +268,7 @@ namespace pxdraw.api
             try
             {
                 PixelService ps = PixelService.Singleton();
-                await ps.InsertBatch(pixels);
+                await ps.InsertBatch(pixels, userId, time);
             }
             catch (Exception err)
             {
