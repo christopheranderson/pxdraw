@@ -5,6 +5,7 @@
 namespace PxDRAW.SignalR.ChangeFeed
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
     using System.Net;
@@ -155,7 +156,13 @@ namespace PxDRAW.SignalR.ChangeFeed
                                 DateTimeOffset signalRDependencyStartTime = DateTimeOffset.UtcNow;
                                 try
                                 {
-                                    await this.signalRHubContext.Clients.All.SendAsync("Changes", JsonConvert.SerializeObject(results));
+                                    var response = results.Select((d) => new
+                                    {
+                                        items = d.GetPropertyValue<List<Pixel>>("items"),
+                                        _lsn = d.GetPropertyValue<long>("_lsn"),
+                                    });
+
+                                    await this.signalRHubContext.Clients.All.SendAsync("Changes", JsonConvert.SerializeObject(response));
                                     this.telemetryClient.TrackDependency("SignalR", "SendAsync", signalRDependencyStartTime, DateTimeOffset.UtcNow.Subtract(signalRDependencyStartTime), true);
                                 }
                                 catch (Exception ex)
