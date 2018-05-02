@@ -1,12 +1,13 @@
+declare var METADATA_ENDPOINT: string
+
 const config: AppConfig = {
-    metadataEndpoint: "http://localhost:7071/api/metadata",
+    metadataEndpoint: METADATA_ENDPOINT,
     isLocal: true
 }
 
 if (window && window.location && window.location.hostname) {
     if (!window.location.hostname.startsWith("localhost")) {
         const info = parseHostnameByConvention(window.location.hostname);
-        config.metadataEndpoint = getMetadataEndpoint(info);
         config.isLocal = false
     }
 }
@@ -25,9 +26,9 @@ export function parseHostnameByConvention(hostname: string): hostinfo {
     }
 }
 
-export function getMetadataEndpoint(info: hostinfo) {
-    return `https://${info.base}-api${info.stage ? "-" + info.stage : ""}.azurewebsites.net/api/metadata`;
-}
+// export function getMetadataEndpoint(info: hostinfo) {
+//     return `https://${info.base}-api${info.stage ? "-" + info.stage : ""}.azurewebsites.net/api/metadata`;
+// }
 
 export interface hostinfo {
     base: string;

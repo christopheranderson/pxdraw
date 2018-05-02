@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const webpack = require('webpack');
 
 module.exports = {
     entry: './built/main.js',
@@ -15,8 +16,12 @@ module.exports = {
             inject: false,
             filename: "../index.html",
             templateParameters:{
-                appInsightsKey: process.env.PXDRAW_APPINSIGHTS_KEY || "<instrumentation key here>",
+                appInsightsKey: process.env.PXDRAW_APPINSIGHTS_KEY || "",
+                REGION: process.env.PXDRAW_REGION_LABEL || "",
             }
+        }),
+        new webpack.DefinePlugin({
+            METADATA_ENDPOINT: JSON.stringify(process.env.PXDRAW_METADATA_ENDPOINT || "http://localhost:7071/api/metadata")
         })
     ]
 };
