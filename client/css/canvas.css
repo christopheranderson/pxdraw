@@ -34,6 +34,7 @@ body {
 
 .description {
     font-size: 15px;
+    padding-top: 5px;
 }
 
 .main-area {
@@ -127,7 +128,7 @@ body {
 .header-block-container {
     display: flex;
     flex-direction: column;
-    justify-content: space-evenly;
+    justify-content: center;
     margin: 0px 20px;
 }
 
@@ -139,6 +140,7 @@ body {
 .header-block-main {
     font-size: 24px;
     text-align: center;
+    padding-top: 5px;
 }
 
 .header-block-main a {

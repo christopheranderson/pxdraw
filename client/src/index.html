@@ -57,7 +57,7 @@
             <div data-bind="foreach: canvas.availableColors">
                 <div class="palette-button" data-bind="style: { backgroundColor: $parent.canvas.toRGBA($index()) }, css: { selected: $parent.canvas.selectedColorIndex() === $index(), bordered: $index() === 3, nonbordered: $index() !== 3 }, click: $parent.canvas.selectColorIndex.bind($parent.canvas, $index())"></div>
             </div>
-            <input type="checkbox" data-bind="visible:isAdmin, checked: isFreehandDrawing" />
+            <!-- <input type="checkbox" data-bind="visible:isAdmin, checked: isFreehandDrawing" /> -->
         </div>
         <div id="canvas-container">
             <canvas id="canvas" width="1000" height="1000"></canvas>
