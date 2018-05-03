@@ -31,7 +31,7 @@ namespace PxDRAW.SignalR.ChangeFeed
         private const int DefaultMaxItemCount = 100;
 
         // Polling delay is used when there are no changes in the feed
-        private const int DefaultPollingIntervalInMilliseconds = 1000;
+        private const int DefaultPollingIntervalInMilliseconds = 50;
         private readonly TelemetryClient telemetryClient;
         private readonly CosmosDbConfiguration cosmosDbConfiguration;
         private bool isRunning = false;
