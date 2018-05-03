@@ -1,0 +1,412 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "base_name": {
+      "defaultValue": "pxdraw",
+      "type": "string"
+    },
+    "cosmos_endpoint": {
+      "type": "string"
+    },
+    "cosmos_masterKey": {
+      "type": "string"
+    },
+    "cosmos_connectionString": {
+      "type": "string"
+    },
+    "cosmos_db_name": {
+      "defaultValue": "pxdraw",
+      "type": "string"
+    },
+    "cosmos_coll_name": {
+      "defaultValue": "board1",
+      "type": "string"
+    },
+    "app_insights_key": {
+      "type": "string"
+    },
+    "custom_client_url": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "custom_blob_url": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "api-tf-endpoint": {
+      "type": "string"
+    }
+  },
+  "variables": {
+
+    "storage_board": {
+      "name": "[concat(toLower(parameters('base_name')))]",
+      "id": "[concat(resourceGroup().id, '/providers/', 'Microsoft.Storage/storageAccounts/', concat(toLower(parameters('base_name'))))]"
+    },
+    "storage_fx_api_storage": {
+      "name": "[concat(toLower(parameters('base_name')), 'api')]",
+      "id": "[concat(resourceGroup().id, '/providers/', 'Microsoft.Storage/storageAccounts/', concat(toLower(parameters('base_name'))), 'api')]"
+    },
+    "storage_fx_updateprocessor_storage": {
+      "name": "[concat(toLower(parameters('base_name')), 'up')]",
+      "id": "[concat(resourceGroup().id, '/providers/', 'Microsoft.Storage/storageAccounts/', concat(toLower(parameters('base_name'))), 'up')]"
+    },
+    "web_app_client": {
+      "name": "[concat(toLower(parameters('base_name')))]",
+      "farm": "[concat(parameters('base_name'), '-client-farm')]"
+    },
+    "web_app_notifications": {
+      "name": "[concat(toLower(parameters('base_name')), '-notifications')]",
+      "farm": "[concat(parameters('base_name'), '-notifications-farm')]"
+    },
+    "function_app_api": {
+      "name": "[concat(toLower(parameters('base_name')), '-api')]",
+      "farm": "[concat(parameters('base_name'), '-dynamic-farm')]"
+    },
+    "function_app_updateprocessor": {
+      "name": "[concat(toLower(parameters('base_name')), '-updateprocessor')]",
+      "farm": "[concat(parameters('base_name'), '-dynamic-farm')]"
+    },
+    "client_url": "[if(equals(parameters('custom_client_url'), ''), concat(parameters('base_name'), '.azurewebsites.net'), parameters('custom_client_url'))]",
+    "board_container_name": "boards",
+    "board_blob_name": "board1",
+    "board_base_url": "[if(equals(parameters('custom_blob_url'), ''), concat('https://', concat(toLower(parameters('base_name'))), '.blob.core.windows.net/'), parameters('custom_blob_url'))]",
+    "user_collection": "users"
+
+  },
+  "resources": [
+    {
+      "comments": "API Function App storage account",
+      "type": "Microsoft.Storage/storageAccounts",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "kind": "Storage",
+      "name": "[variables('storage_fx_api_storage').name]",
+      "apiVersion": "2017-10-01",
+      "location": "westus",
+      "tags": {},
+      "scale": null,
+      "properties": {
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [],
+          "ipRules": [],
+          "defaultAction": "Allow"
+        },
+        "supportsHttpsTrafficOnly": false,
+        "encryption": {
+          "services": {
+            "file": {
+              "enabled": true
+            },
+            "blob": {
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        }
+      },
+      "dependsOn": []
+    },
+    {
+      "comments": "Update processor Function App storage account",
+      "type": "Microsoft.Storage/storageAccounts",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "kind": "Storage",
+      "name": "[variables('storage_fx_updateprocessor_storage').name]",
+      "apiVersion": "2017-10-01",
+      "location": "westus",
+      "tags": {},
+      "scale": null,
+      "properties": {
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [],
+          "ipRules": [],
+          "defaultAction": "Allow"
+        },
+        "supportsHttpsTrafficOnly": false,
+        "encryption": {
+          "services": {
+            "file": {
+              "enabled": true
+            },
+            "blob": {
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        }
+      },
+      "dependsOn": []
+    },
+    {
+      "comments": "Hosts the board blobs",
+      "type": "Microsoft.Storage/storageAccounts",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "kind": "Storage",
+      "name": "[variables('storage_board').name]",
+      "apiVersion": "2017-10-01",
+      "location": "westus",
+      "tags": {},
+      "scale": null,
+      "properties": {
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [],
+          "ipRules": [],
+          "defaultAction": "Allow"
+        },
+        "supportsHttpsTrafficOnly": false,
+        "encryption": {
+          "services": {
+            "file": {
+              "enabled": true
+            },
+            "blob": {
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        }
+      },
+      "dependsOn": []
+    },
+    {
+      "comments": "Client server farm",
+      "type": "Microsoft.Web/serverfarms",
+      "sku": {
+        "name": "P1v2",
+        "tier": "PremiumV2",
+        "size": "P1v2",
+        "family": "Pv2",
+        "capacity": 1
+      },
+      "kind": "app",
+      "name": "[variables('web_app_client').farm]",
+      "apiVersion": "2016-09-01",
+      "location": "[resourceGroup().location]",
+      "properties": {},
+      "dependsOn": []
+    },
+    {
+      "comments": "Notification server farm",
+      "type": "Microsoft.Web/serverfarms",
+      "sku": {
+        "name": "P1v2",
+        "tier": "PremiumV2",
+        "size": "P1v2",
+        "family": "Pv2",
+        "capacity": 1
+      },
+      "kind": "app",
+      "name": "[variables('web_app_notifications').farm]",
+      "apiVersion": "2016-09-01",
+      "location": "[resourceGroup().location]",
+      "properties": {},
+      "dependsOn": []
+    },
+    {
+      "comments": "Dynamic server farm",
+      "type": "Microsoft.Web/serverfarms",
+      "sku": {
+        "name": "Y1",
+        "tier": "Dynamic",
+        "size": "Y1",
+        "family": "Y",
+        "capacity": 0
+      },
+      "kind": "functionapp",
+      "name": "[variables('function_app_api').farm]",
+      "apiVersion": "2016-09-01",
+      "location": "[resourceGroup().location]",
+      "properties": {},
+      "dependsOn": []
+    },
+    {
+      "comments": "Client Web App",
+      "type": "Microsoft.Web/sites",
+      "kind": "app",
+      "name": "[variables('web_app_client').name]",
+      "apiVersion": "2016-08-01",
+      "location": "[resourceGroup().location]",
+      "tags": {},
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('web_app_client').farm)]"
+      },
+      "resources": [
+        {
+          "comments": "Client web app config",
+          "type": "config",
+          "name": "web",
+          "apiVersion": "2016-08-01",
+          "scale": null,
+          "properties": {
+            "alwaysOn": true
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', variables('web_app_client').name)]"
+          ]
+        }
+      ],
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('web_app_client').farm)]"
+      ]
+    },
+    {
+      "comments": "Notification Web App",
+      "type": "Microsoft.Web/sites",
+      "kind": "app",
+      "name": "[variables('web_app_notifications').name]",
+      "apiVersion": "2016-08-01",
+      "location": "[resourceGroup().location]",
+      "tags": {},
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('web_app_notifications').farm)]",
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "foo",
+              "value": "bar"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('web_app_notifications').farm)]"
+      ],
+      "resources": [
+        {
+          "name": "appsettings",
+          "type": "config",
+          "apiVersion": "2015-08-01",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', variables('web_app_notifications').name)]"
+          ],
+          "tags": {
+            "displayName": "appsettings"
+          },
+          "properties": {
+            "CosmosDB:DatabaseName": "[parameters('cosmos_db_name')]",
+            "CosmosDB:CollectionName": "[parameters('cosmos_coll_name')]",
+            "CosmosDB:PollingInterval": "50",
+            "CosmosDB:MaxItemCount": "1",
+            "CosmosDB:PreferredLocations": "",
+            "CosmosDB:Endpoint": "[parameters('cosmos_endpoint')]",
+            "CosmosDB:MasterKey": "[parameters('cosmos_masterKey')]",
+            "ApplicationInsights:InstrumentationKey": "[parameters('app_insights_key')]"
+          }
+        }
+      ]
+    },
+    {
+      "comments": "API Function App",
+      "type": "Microsoft.Web/sites",
+      "kind": "functionapp",
+      "name": "[variables('function_app_api').name]",
+      "apiVersion": "2016-08-01",
+      "location": "[resourceGroup().location]",
+      "scale": null,
+      "properties": {
+        "cors": {
+          "allowedOrigins": []
+        },
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('function_app_api').farm)]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('function_app_api').farm)]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storage_fx_api_storage').name)]"
+      ],
+      "resources": [
+        {
+          "name": "appsettings",
+          "type": "config",
+          "apiVersion": "2015-08-01",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', variables('function_app_api').name)]",
+            "[resourceId('Microsoft.Storage/storageAccounts', variables('storage_fx_api_storage').name)]"
+          ],
+          "tags": {
+            "displayName": "appsettings"
+          },
+          "properties": {
+            "AzureWebJobsDashboard": "",
+            "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storage_fx_api_storage').name, ';AccountKey=', listKeys(variables('storage_fx_api_storage').id,'2015-05-01-preview').key1)]",
+            "FUNCTIONS_EXTENSION_VERSION": "~1",
+            "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storage_fx_api_storage').name, ';AccountKey=', listKeys(variables('storage_fx_api_storage').id,'2015-05-01-preview').key1)]",
+            "WEBSITE_CONTENTSHARE": "[toLower(variables('function_app_api').name)]",
+            "WEBSITE_NODE_DEFAULT_VERSION": "6.5.0",
+            "APPINSIGHTS_INSTRUMENTATIONKEY": "[parameters('app_insights_key')]",
+            "PXDRAW_COSMOS_ENDPOINT": "[parameters('cosmos_endpoint')]",
+            "PXDRAW_COSMOS_MASTERKEY": "[parameters('cosmos_masterKey')]",
+            "PXDRAW_COSMOS_COLLECTION_URI": "[concat('dbs/', parameters('cosmos_db_name'), '/colls/', parameters('cosmos_coll_name'))]",
+            "PXDRAW_UPDATEPIXEL_ENDPOINT": "[concat('https://', parameters('api-tf-endpoint'),'.net/api/update-pixel')]",
+            "PXDRAW_WEBSOCKET_ENDPOINT": "[concat('https://', variables('web_app_notifications').name,'.azurewebsites.net/hubs/notifications')]",
+            "PXDRAW_GETBOARD_ENDPOINT": "[concat(variables('board_base_url'), variables('board_container_name') ,'/', variables('board_blob_name'))]",
+            "WEBSITE_HTTPSCALEV2_ENABLED": "1",
+            "PXDRAW_TWITTER_ENDPOINT": "[concat('https://', parameters('api-tf-endpoint'),'.net/.auth/login/twitter?post_login_redirect_uri=', variables('client_url'))]",
+            "PXDRAW_COSMOS_USER_COLLECTION_URI": "[concat('dbs/', parameters('cosmos_db_name'),'/colls/', parameters('cosmos_coll_name'))]",
+            "PXDRAW_ADMIN_ENDPOINT": "[concat('https://', parameters('api-tf-endpoint'),'.net/.auth/login/aad?post_login_redirect_uri=', variables('client_url'))]",
+            "PXDRAW_USER_ENDPOINT": "[concat('https://', parameters('api-tf-endpoint'),'.net/api/user')]",
+            "PXDRAW_LOGOUT_ENDPOINT": "[concat('https://', parameters('api-tf-endpoint'),'.net/.auth/logout?post_logout_redirect_uri=', variables('client_url'))]"
+          }
+        }
+      ]
+    },
+    {
+      "comments": "Updateprocessor Function App",
+      "type": "Microsoft.Web/sites",
+      "kind": "functionapp",
+      "name": "[variables('function_app_updateprocessor').name]",
+      "apiVersion": "2016-08-01",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('function_app_updateprocessor').farm)]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('function_app_updateprocessor').farm)]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storage_fx_updateprocessor_storage').name)]"
+      ],
+      "resources": [
+        {
+          "name": "appsettings",
+          "type": "config",
+          "apiVersion": "2015-08-01",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', variables('function_app_updateprocessor').name)]",
+            "[resourceId('Microsoft.Storage/storageAccounts', variables('storage_fx_updateprocessor_storage').name)]",
+            "[resourceId('Microsoft.Storage/storageAccounts', variables('storage_board').name)]"
+          ],
+          "tags": {
+            "displayName": "appsettings"
+          },
+          "properties": {
+            "AzureWebJobsDashboard": "",
+            "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storage_fx_updateprocessor_storage').name, ';AccountKey=', listKeys(variables('storage_fx_updateprocessor_storage').id,'2015-05-01-preview').key1)]",
+            "FUNCTIONS_EXTENSION_VERSION": "~1",
+            "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storage_fx_updateprocessor_storage').name, ';AccountKey=', listKeys(variables('storage_fx_updateprocessor_storage').id,'2015-05-01-preview').key1)]",
+            "WEBSITE_CONTENTSHARE": "[toLower(variables('function_app_updateprocessor').name)]",
+            "WEBSITE_NODE_DEFAULT_VERSION": "6.5.0",
+            "APPINSIGHTS_INSTRUMENTATIONKEY": "[parameters('app_insights_key')]",
+            "PXDRAW_COSMOSDB_CONNECTION": "[parameters('cosmos_connectionString')]",
+            "PXDRAW_STORAGE": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storage_board').name, ';AccountKey=', listKeys(variables('storage_board').id,'2015-05-01-preview').key1)]",
+            "PXDRAW_COSMOS_COLLECTION": "[parameters('cosmos_coll_name')]",
+            "PXDRAW_COSMOS_LEASE_COLLECTION": "leases-prod",
+            "PXDRAW_COSMOS_DATABASE": "[parameters('cosmos_db_name')]",
+            "PXDRAW_CONTAINER_NAME": "[variables('board_container_name')]",
+            "PXDRAW_BOARD_NAME": "[variables('board_blob_name')]"
+          }
+        }
+      ]
+    }
+  ]
+}

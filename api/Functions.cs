@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -81,6 +82,26 @@ namespace pxdraw.api
                 return res;
             }
         }
+
+        [FunctionName("top-tweets")]
+        public static async Task<HttpResponseMessage> TopTweets([HttpTrigger(AuthorizationLevel.Anonymous, "get", "options", Route = null)]HttpRequestMessage req, ILogger log, ExecutionContext context)
+        {
+            try {
+                TweetService ts = TweetService.GetDefaultSingleton();
+                List<Tweet> tweets = await ts.GetTopTweets();
+                var res = req.CreateResponse(HttpStatusCode.OK, tweets);
+                ApplyCORSRules(req, res);
+                return res;
+            }
+            catch (Exception err)
+            {
+                log.LogError(err);
+                var res = req.CreateErrorResponse(HttpStatusCode.InternalServerError, $"Could not complete the request. Reference {context.InvocationId} for details.");
+                ApplyCORSRules(req, res);
+                return res;
+            }
+        }
+
 
         /// <summary>
         /// Retrieves information about the user

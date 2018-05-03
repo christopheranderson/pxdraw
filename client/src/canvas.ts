@@ -101,9 +101,13 @@ export class Canvas {
     // TODO: Remove this once LSN supported
     private historyBuffer: PixelUpdate[] = [];
 
-
     private drawingQueue: PixelUpdate[] = [];
     private pendingBoard: Uint8Array = null;
+
+    private readonly minBatchSize = 10;
+    private readonly maxBatchSize = 300;
+    private readonly stepSize = 50;
+    private currentBatchSize = this.minBatchSize;
 
     public constructor(params: CanvasParameters) {
         // Pre-calculate palette values to speed up renderBoard()
@@ -260,6 +264,13 @@ export class Canvas {
         return `rgba(${color.r},${color.g},${color.b},${color.a})`;
     }
 
+
+    private getIntermediateBatchSize(): number {
+        const batchSize = this.currentBatchSize;
+        this.currentBatchSize = (this.currentBatchSize + this.stepSize) % this.maxBatchSize;
+        return this.currentBatchSize;
+    }
+
     private onMouseMove(e: MouseEvent | TouchEvent) {
         let position;
         if (e instanceof MouseEvent) {
@@ -292,7 +303,7 @@ export class Canvas {
                 this.queuePixelUpdate(update);
             });
             const pendingUpdates = this.drawingBuffer.getAllUpdates();
-            if(pendingUpdates.length > 300) {
+            if(pendingUpdates.length > this.getIntermediateBatchSize()) {
                 this.params.onPixelUpdatesSubmitted(pendingUpdates);
                 this.drawingBuffer.reset();
             }
@@ -312,6 +323,7 @@ export class Canvas {
 
     private onMouseDown(e: MouseEvent | TouchEvent) {
         this.totalDragDistance = 0;
+        this.currentBatchSize = this.minBatchSize;
 
         let position;
         if (e instanceof MouseEvent) {

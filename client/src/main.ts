@@ -41,6 +41,7 @@ export interface FetchMetadataResponseData {
     websocketEndpoint: string;
     userEndpoint: string;
     logoutEndpoint: string;
+    throttleRate: number;
 }
 
 export interface FetchBoardData {
@@ -52,7 +53,7 @@ export class Main {
     public static readonly LOCALHOST_CLIENT_PRINCIPAL_ID = 'PrincicalId';
     public static readonly LOCALHOST_CLIENT_PRINCIPAL_IDP = 'aad'; // use twitter for non-admin
     private static readonly REFRESH_BOARD_DELAY_MS = 30000;
-    private static readonly DRAW_DELAY_S = 30;
+    private static DRAW_DELAY_S = 30;
     private static readonly TIME_UPDATE_MS = 1000; // Update every second
 
     // state
@@ -239,6 +240,7 @@ export class Main {
                     this.websocketEndpoint = data.websocketEndpoint;
                     this.userEndpoint = data.userEndpoint;
                     this.logoutEndpoint = data.logoutEndpoint;
+                    Main.DRAW_DELAY_S = data.throttleRate;
                     resolve();
                 },
                 error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
@@ -301,7 +303,7 @@ export class Main {
         console.log(`Replayed ${count} updates took ${performance.now() - start} ms`);
     }
 
-    private async submitPixelUpdates(updates: PixelUpdate[]):Promise<{}> {
+    private async submitPixelUpdates(updates: PixelUpdate[]): Promise<void> {
         const remainingMs = this.getRemainingMsBeforeDraw();
         if (remainingMs > 0 && !this.user.isAdmin) {
             const error = `Must wait another ${remainingMs}ms`;
@@ -310,11 +312,10 @@ export class Main {
         console.log(`Submitting ${updates.length} updates`);
 
         const numberOfBatches = updates.length / BATCH_SIZE;
-        const promises = [];
         for(let i = 0; i < numberOfBatches; i++)
         {
             const data = JSON.stringify(updates.slice(i*BATCH_SIZE, (i+1)*BATCH_SIZE));
-            promises.push(new Promise((resolve, reject) => {
+            await new Promise((resolve, reject) => {
                 $.ajax({
                     type: 'POST',
                     url: this.updatePixelEndpoint,
@@ -343,9 +344,8 @@ export class Main {
                         reject(errorThrown);
                     }
                 });
-            }));
+            });
         }
-        return Promise.all(promises);
     }
 }
 
