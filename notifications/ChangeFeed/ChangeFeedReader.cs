@@ -95,6 +95,7 @@ namespace PxDRAW.SignalR.ChangeFeed
                         try
                         {
                             readChangesResponse = await query.ExecuteNextAsync<Document>();
+                            this.telemetryClient.TrackMetric(new MetricTelemetry("CosmosDB.ChangeFeed.RU",readChangesResponse.RequestCharge));
                             this.telemetryClient.TrackDependency("CosmosDB.ChangeFeed", "ExecuteNextAsync", feedDependencyStartTime, DateTimeOffset.UtcNow.Subtract(feedDependencyStartTime), true);
                             options.RequestContinuation = readChangesResponse.ResponseContinuation;
                         }
@@ -149,7 +150,11 @@ namespace PxDRAW.SignalR.ChangeFeed
                                 this.telemetryClient.TrackException(dcex);
                             }
 
-                            await Task.Delay(dcex.RetryAfter != TimeSpan.Zero ? dcex.RetryAfter : feedPollDelay, cancellation);
+                            if (dcex.RetryAfter != TimeSpan.Zero)
+                            {
+                                this.telemetryClient.TrackTrace($"Exception requires retryAfter, sleeping {dcex.RetryAfter.TotalMilliseconds} ms.");
+                                await Task.Delay(dcex.RetryAfter, cancellation);
+                            }
                         }
 
                         if (readChangesResponse != null)
@@ -180,8 +185,10 @@ namespace PxDRAW.SignalR.ChangeFeed
                             }
                             else
                             {
+                                this.telemetryClient.TrackTrace($"No changes, sleeping {feedPollDelay.TotalMilliseconds} ms.");
                                 this.telemetryClient.StopOperation(operation);
                                 this.telemetryClient.Flush();
+
                                 await Task.Delay(feedPollDelay, cancellation);
                             }
                         }
