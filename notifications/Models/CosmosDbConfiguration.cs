@@ -18,6 +18,8 @@ namespace PxDRAW.SignalR.Models
 
         public int? PollingInterval { get; set; }
 
+        public int? MaxItemCount { get; set; }
+
         public string PreferredLocations { get; set; }
 
         public string[] ValidatedPreferredLocations

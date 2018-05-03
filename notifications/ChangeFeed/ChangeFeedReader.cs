@@ -31,7 +31,7 @@ namespace PxDRAW.SignalR.ChangeFeed
         private const int DefaultMaxItemCount = 100;
 
         // Polling delay is used when there are no changes in the feed
-        private const int DefaultPollingIntervalInSeconds = 1;
+        private const int DefaultPollingIntervalInMilliseconds = 50;
         private readonly TelemetryClient telemetryClient;
         private readonly CosmosDbConfiguration cosmosDbConfiguration;
         private bool isRunning = false;
@@ -67,7 +67,7 @@ namespace PxDRAW.SignalR.ChangeFeed
             }
 
             this.isRunning = true;
-            TimeSpan feedPollDelay = TimeSpan.FromSeconds(this.cosmosDbConfiguration.PollingInterval.HasValue ? this.cosmosDbConfiguration.PollingInterval.Value : DefaultPollingIntervalInSeconds);
+            TimeSpan feedPollDelay = TimeSpan.FromMilliseconds(this.cosmosDbConfiguration.PollingInterval.HasValue ? this.cosmosDbConfiguration.PollingInterval.Value : ChangeFeedReader.DefaultPollingIntervalInMilliseconds);
             return Task.Run(async () =>
             {
                 this.telemetryClient.TrackEvent($"ChangeFeedReader running.");
@@ -76,6 +76,11 @@ namespace PxDRAW.SignalR.ChangeFeed
                     MaxItemCount = -1,
                     PartitionKeyRangeId = "0",
                 };
+
+                if (this.cosmosDbConfiguration.MaxItemCount.HasValue)
+                {
+                    options.MaxItemCount = this.cosmosDbConfiguration.MaxItemCount.Value;
+                }
 
                 while (this.isRunning)
                 {
