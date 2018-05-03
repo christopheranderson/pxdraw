@@ -77,6 +77,11 @@ namespace PxDRAW.SignalR.ChangeFeed
                     PartitionKeyRangeId = "0",
                 };
 
+                if (this.cosmosDbConfiguration.MaxItemCount.HasValue)
+                {
+                    options.MaxItemCount = this.cosmosDbConfiguration.MaxItemCount.Value;
+                }
+
                 while (this.isRunning)
                 {
                     IDocumentQuery<Document> query = this.documentClient.CreateDocumentChangeFeedQuery(this.collectionLink, options);
