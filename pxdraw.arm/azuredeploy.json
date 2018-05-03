@@ -72,7 +72,8 @@
     "board_container_name": "boards",
     "board_blob_name": "board1",
     "board_base_url": "[if(equals(parameters('custom_blob_url'), ''), concat('https://', concat(toLower(parameters('base_name'))), '.blob.core.windows.net/'), parameters('custom_blob_url'))]",
-    "user_collection": "users"
+    "user_collection": "users",
+    "tweet_collection": "tweets"
 
   },
   "resources": [
