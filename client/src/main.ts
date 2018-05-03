@@ -65,7 +65,7 @@ export class Main {
     public static readonly LOCALHOST_CLIENT_PRINCIPAL_ID = 'PrincicalId';
     public static readonly LOCALHOST_CLIENT_PRINCIPAL_IDP = 'aad'; // use twitter for non-admin
     private static readonly REFRESH_BOARD_DELAY_MS = 30000;
-    private static readonly REFRESH_TWITTER_TRENDS_MS = 60000;
+    private static readonly REFRESH_TWITTER_TRENDS_MIN = 10;
     private static readonly DRAW_DELAY_S = 30;
     private static readonly TIME_UPDATE_MS = 1000; // Update every second
 
@@ -164,7 +164,7 @@ export class Main {
         this.enableTopTeams(config.enableTopTeams);
         if (config.enableTopTeams) {
             this.updateTwitterTrends();
-            setInterval(this.updateTwitterTrends.bind(this), Main.REFRESH_TWITTER_TRENDS_MS);
+            setInterval(this.updateTwitterTrends.bind(this), Main.REFRESH_TWITTER_TRENDS_MIN * 60 * 1000);
             $('.teams-container').draggable({ axis: 'y', containment: "#canvas-container", scroll: false });
         }
     }
