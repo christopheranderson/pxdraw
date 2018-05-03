@@ -17,11 +17,12 @@ module.exports = {
             filename: "../index.html",
             templateParameters:{
                 appInsightsKey: process.env.PXDRAW_APPINSIGHTS_KEY || "",
-                REGION: process.env.PXDRAW_REGION_LABEL || "",
+                REGION: process.env.PXDRAW_REGION_LABEL || ""
             }
         }),
         new webpack.DefinePlugin({
-            METADATA_ENDPOINT: JSON.stringify(process.env.PXDRAW_METADATA_ENDPOINT || "http://localhost:7071/api/metadata")
+            METADATA_ENDPOINT: JSON.stringify(process.env.PXDRAW_METADATA_ENDPOINT || "http://localhost:7071/api/metadata"),
+            ENABLE_TOP_TEAMS: !!process.env.PXDRAW_ENABLE_TOP_TEAMS
         })
     ]
 };

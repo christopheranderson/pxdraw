@@ -5,6 +5,7 @@ This is the client app for build demo.
 - `PXDRAW_METADATA_ENDPOINT`: sets the metadata endpoint that this app needs to talk to (defaults to localhost)
 - `PXDRAW_APPINSIGHTS_KEY`: sets the app insights key you want to use
 - `PXDRAW_REGION_LABEL`: sets the region label in the page title (defaults to "") (this is only used for the demo environments to show which region the site is in)
+- `PXDRAW_ENABLE_TOP_TEAMS`: Enables the Twitter Top teams functionality: set to true to enable (disabled in demo environment)
 
 ## Build the client
 

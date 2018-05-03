@@ -152,3 +152,33 @@ body {
     position: absolute;
     bottom: 0px;
 }
+
+.teams-container {
+    margin: 10px;
+    position: absolute;
+    top: 50px;
+    right: 0px;
+    background-color: #002050;
+    background-color: white;
+    color: black;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #cccccc;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.teams-container .title {
+    cursor: move;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.teams-container .team-name {
+    font-size: 13px;
+    padding-right: 10px;
+}
+
+.teams-container .team-count {
+    font-size: 10px;
+    text-align: right;
+}

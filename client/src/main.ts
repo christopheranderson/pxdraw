@@ -48,10 +48,24 @@ export interface FetchBoardData {
     lsn: number;
 }
 
+interface TwitterTeam {
+    team: string;
+    hashtags: string[];
+    count: number;
+    url: string;
+}
+
+interface TwitterTrend {
+    team: string;
+    hashtags: string;
+    count: number;
+}
+
 export class Main {
     public static readonly LOCALHOST_CLIENT_PRINCIPAL_ID = 'PrincicalId';
     public static readonly LOCALHOST_CLIENT_PRINCIPAL_IDP = 'aad'; // use twitter for non-admin
     private static readonly REFRESH_BOARD_DELAY_MS = 30000;
+    private static readonly REFRESH_TWITTER_TRENDS_MIN = 10;
     private static readonly DRAW_DELAY_S = 30;
     private static readonly TIME_UPDATE_MS = 1000; // Update every second
 
@@ -79,6 +93,8 @@ export class Main {
     private timerId: number;
     private remainingTimeDisplay: KnockoutObservable<string>;
     private isNow: KnockoutObservable<boolean>;
+    private twitterTeams: KnockoutObservableArray<TwitterTeam>;
+    private enableTopTeams: KnockoutObservable<boolean>;
 
     public constructor() {
         this.canvas = new Canvas({
@@ -99,9 +115,11 @@ export class Main {
             this.canvas.drawMode(newValue? DrawModes.Freehand:DrawModes.Pixel);
         });
         this.timerId = 0;
+        this.twitterTeams = ko.observableArray([]);
+        this.enableTopTeams = ko.observable(false);
     }
 
-    public async init(){
+    public async init() {
         this.updateClient = new UpdateClient({
             onReceived: this.onPixelUpdateFromRemote.bind(this)
         });
@@ -142,6 +160,13 @@ export class Main {
         // Periodic board update
         this.updateBoard();
         setInterval(this.updateBoard.bind(this), Main.REFRESH_BOARD_DELAY_MS);
+
+        this.enableTopTeams(config.enableTopTeams);
+        if (config.enableTopTeams) {
+            this.updateTwitterTrends();
+            setInterval(this.updateTwitterTrends.bind(this), Main.REFRESH_TWITTER_TRENDS_MIN * 60 * 1000);
+            $('.teams-container').draggable({ axis: 'y', containment: "#canvas-container", scroll: false });
+        }
     }
 
     private processFetchBoardResponse(data: ArrayBuffer) {
@@ -347,6 +372,34 @@ export class Main {
         }
         return Promise.all(promises);
     }
+
+    private updateTwitterTrends() {
+        $.ajax({
+            type: 'GET',
+            url: 'http://localhost:25751/api/twitter/trends',
+            success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
+                if (!Array.isArray(data)) {
+                    console.error('Invalid twitter trend received');
+                    return;
+                }
+
+                const twitterTeams: TwitterTeam[] = [];
+                $.each(data, (index:number, trend: TwitterTrend) => {
+                    twitterTeams.push({
+                        team: `#${trend.team}`,
+                        count: trend.count,
+                        hashtags: trend.hashtags.split(','),
+                        url: `http://www.twitter.com/hashtag/${trend.team}`
+                    })
+                });
+                this.twitterTeams(twitterTeams);
+            },
+            error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
+                console.error(`Failed to get trends:${errorThrown}`);
+            }
+        });
+    }
+
 }
 
 $(document).ready(async () => {
