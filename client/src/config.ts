@@ -1,8 +1,10 @@
-declare var METADATA_ENDPOINT: string
+declare var METADATA_ENDPOINT: string;
+declare var ENABLE_TOP_TEAMS: boolean;
 
 const config: AppConfig = {
     metadataEndpoint: METADATA_ENDPOINT,
-    isLocal: true
+    isLocal: true,
+    enableTopTeams: ENABLE_TOP_TEAMS
 }
 
 if (window && window.location && window.location.hostname) {
@@ -38,6 +40,7 @@ export interface hostinfo {
 export interface AppConfig {
     metadataEndpoint: string;
     isLocal: boolean;
+    enableTopTeams: boolean;
 }
 
 export { config };

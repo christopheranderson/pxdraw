@@ -68,7 +68,7 @@
                     data-size="large" data-show-count="false">Tweet #CosmosDB</a>
                 <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
             </div>
-            <div class="teams-container">
+            <div class="teams-container" style="display:none" data-bind="visible: enableTopTeams">
                 <div class="title">Top Teams</div>
                 <table>
                     <tbody data-bind="foreach: twitterTeams">

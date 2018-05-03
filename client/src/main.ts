@@ -94,6 +94,7 @@ export class Main {
     private remainingTimeDisplay: KnockoutObservable<string>;
     private isNow: KnockoutObservable<boolean>;
     private twitterTeams: KnockoutObservableArray<TwitterTeam>;
+    private enableTopTeams: KnockoutObservable<boolean>;
 
     public constructor() {
         this.canvas = new Canvas({
@@ -115,9 +116,10 @@ export class Main {
         });
         this.timerId = 0;
         this.twitterTeams = ko.observableArray([]);
+        this.enableTopTeams = ko.observable(false);
     }
 
-    public async init(){
+    public async init() {
         this.updateClient = new UpdateClient({
             onReceived: this.onPixelUpdateFromRemote.bind(this)
         });
@@ -159,10 +161,12 @@ export class Main {
         this.updateBoard();
         setInterval(this.updateBoard.bind(this), Main.REFRESH_BOARD_DELAY_MS);
 
-        this.updateTwitterTrends();
-        setInterval(this.updateTwitterTrends.bind(this), Main.REFRESH_TWITTER_TRENDS_MS);
-
-        $('.teams-container').draggable({ axis: 'y', containment: "#canvas-container", scroll: false });
+        this.enableTopTeams(config.enableTopTeams);
+        if (config.enableTopTeams) {
+            this.updateTwitterTrends();
+            setInterval(this.updateTwitterTrends.bind(this), Main.REFRESH_TWITTER_TRENDS_MS);
+            $('.teams-container').draggable({ axis: 'y', containment: "#canvas-container", scroll: false });
+        }
     }
 
     private processFetchBoardResponse(data: ArrayBuffer) {
