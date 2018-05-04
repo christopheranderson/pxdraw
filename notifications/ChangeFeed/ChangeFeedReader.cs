@@ -95,9 +95,10 @@ namespace PxDRAW.SignalR.ChangeFeed
                         try
                         {
                             readChangesResponse = await query.ExecuteNextAsync<Document>();
-                            this.telemetryClient.TrackMetric(new MetricTelemetry("CosmosDB.ChangeFeed.RU",readChangesResponse.RequestCharge));
+                            this.telemetryClient.TrackMetric(new MetricTelemetry("CosmosDB.ChangeFeed.RU", readChangesResponse.RequestCharge));
                             this.telemetryClient.TrackDependency("CosmosDB.ChangeFeed", "ExecuteNextAsync", feedDependencyStartTime, DateTimeOffset.UtcNow.Subtract(feedDependencyStartTime), true);
                             options.RequestContinuation = readChangesResponse.ResponseContinuation;
+                            this.telemetryClient.TrackTrace($"Updating Continuation Token {options.RequestContinuation}.");
                         }
                         catch (DocumentClientException ex)
                         {
@@ -164,7 +165,8 @@ namespace PxDRAW.SignalR.ChangeFeed
                             var results = readChangesResponse.ToList();
                             if (results.Count > 0)
                             {
-                                this.telemetryClient.TrackTrace($"Detected {results.Count} documents.");
+                                var lsn = results.First().GetPropertyValue<long>("_lsn");
+                                this.telemetryClient.TrackTrace($"Detected {results.Count} documents. First _lsn {lsn}");
                                 DateTimeOffset signalRDependencyStartTime = DateTimeOffset.UtcNow;
                                 try
                                 {
@@ -183,21 +185,17 @@ namespace PxDRAW.SignalR.ChangeFeed
                                     this.telemetryClient.TrackDependency("SignalR", "SendAsync", signalRDependencyStartTime, DateTimeOffset.UtcNow.Subtract(signalRDependencyStartTime), false);
                                 }
                                 this.telemetryClient.StopOperation(operation);
-                                this.telemetryClient.Flush();
                             }
                             else
                             {
                                 this.telemetryClient.TrackTrace($"No changes, sleeping {feedPollDelay.TotalMilliseconds} ms.");
                                 this.telemetryClient.StopOperation(operation);
-                                this.telemetryClient.Flush();
-
                                 await Task.Delay(feedPollDelay, cancellation);
                             }
                         }
                         else
                         {
                             this.telemetryClient.StopOperation(operation);
-                            this.telemetryClient.Flush();
                         }
                     }
                     while (query.HasMoreResults && this.isRunning);
