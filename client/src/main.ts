@@ -377,6 +377,7 @@ export class Main {
                 success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
                     if (!Array.isArray(data)) {
                         console.error('Invalid twitter trend received');
+                        reject('Results not an Array');
                         return;
                     }
 
