@@ -11,5 +11,7 @@ namespace pxdraw.api.models
     {
         [JsonProperty("url")]
         public string Url { get; set; }
+        [JsonProperty("id")]
+        public string Id { get; set; }
     }
 }

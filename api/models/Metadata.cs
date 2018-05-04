@@ -23,5 +23,7 @@ namespace pxdraw.api.models
         public string LogoutEndpoint { get; set; }
         [JsonProperty("throttleRate", NullValueHandling = NullValueHandling.Include)]
         public int ThrottleRate { get; set; }
+        [JsonProperty("topTweetsEndpoint", NullValueHandling = NullValueHandling.Include)]
+        public string TopTweetsEndpoint { get; set; }
     }
 }
