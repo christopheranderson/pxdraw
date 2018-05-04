@@ -21,7 +21,8 @@ module.exports = {
             }
         }),
         new webpack.DefinePlugin({
-            METADATA_ENDPOINT: JSON.stringify(process.env.PXDRAW_METADATA_ENDPOINT || "http://localhost:7071/api/metadata")
+            METADATA_ENDPOINT: JSON.stringify(process.env.PXDRAW_METADATA_ENDPOINT || "http://localhost:7071/api/metadata"),
+            AUTHREQUIRED: !!(process.env.PXDRAW_AUTHREQUIRED === "true" || false)
         })
     ]
 };

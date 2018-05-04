@@ -138,7 +138,9 @@ export class Main {
             console.log("User is not logged in");
         }
 
-        this.updateClient.init(this.websocketEndpoint);
+        if(!config.isAuthRequired || this.isLoggedIn()) {
+            this.updateClient.init(this.websocketEndpoint);
+        }
 
         // Periodic board update
         this.updateBoard();
