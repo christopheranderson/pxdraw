@@ -129,6 +129,8 @@ namespace PxDRAW.SignalR.ChangeFeed
                             }
                             else if (dcex.Message.Contains("Reduce page size and try again."))
                             {
+                                this.telemetryClient.TrackEvent($"Page size error while reading the feed.");
+
                                 // Temporary workaround to compare exception message, until server provides better way of handling this case.
                                 if (!options.MaxItemCount.HasValue)
                                 {
