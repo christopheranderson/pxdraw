@@ -157,7 +157,7 @@ export class Main {
 
         this.isTrendingTweetsEnabled(config.isTrendingTweetsEnabled);
         if (config.isTrendingTweetsEnabled) {
-            this.updateTwitterTrend();
+            this.updateTwitterTrend().then(() => this.canvas.centerCanvas());
             setInterval(this.updateTwitterTrend.bind(this), Main.REFRESH_TWITTER_TRENDS_MIN * 60 * 1000);
         }
     }
@@ -367,27 +367,33 @@ export class Main {
         return Promise.all(promises);
     }
 
-    private updateTwitterTrend() {
-        $.ajax({
-            type: 'GET',
-            url: this.topTweetsEndpoint,
-            success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
-                if (!Array.isArray(data)) {
-                    console.error('Invalid twitter trend received');
-                    return;
-                }
+    private updateTwitterTrend(): Promise<any> {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                type: 'GET',
+                url: this.topTweetsEndpoint,
+                success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
+                    if (!Array.isArray(data)) {
+                        console.error('Invalid twitter trend received');
+                        return;
+                    }
 
-                $.each(data, (index: number, trend: TweetsResponse) => {
-                    twttr.widgets.createTweet(
-                        trend.id,
-                        document.getElementById('tweets'),
-                        { conversation:'none', width: 400 }
-                    );
-                });
-            },
-            error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
-                console.error(`Failed to get trend:${errorThrown}`);
-            }
+                    const promises: Promise<any>[] = [];
+                    $.each(data, (index: number, trend: TweetsResponse) => {
+                        const p = twttr.widgets.createTweet(
+                            trend.id,
+                            document.getElementById('tweets'),
+                            { conversation:'none', width: 400 }
+                        );
+                        promises.push(p);
+                    });
+                    Promise.all(promises).then(() => resolve());
+                },
+                error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
+                    console.error(`Failed to get trend:${errorThrown}`);
+                    reject(errorThrown);
+                }
+            });
         });
     }
 }
