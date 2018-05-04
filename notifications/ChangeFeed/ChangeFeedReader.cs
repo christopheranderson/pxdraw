@@ -98,7 +98,6 @@ namespace PxDRAW.SignalR.ChangeFeed
                             this.telemetryClient.TrackMetric(new MetricTelemetry("CosmosDB.ChangeFeed.RU", readChangesResponse.RequestCharge));
                             this.telemetryClient.TrackDependency("CosmosDB.ChangeFeed", "ExecuteNextAsync", feedDependencyStartTime, DateTimeOffset.UtcNow.Subtract(feedDependencyStartTime), true);
                             options.RequestContinuation = readChangesResponse.ResponseContinuation;
-                            this.telemetryClient.TrackTrace($"Updating Continuation Token {options.RequestContinuation}.");
                         }
                         catch (DocumentClientException ex)
                         {
