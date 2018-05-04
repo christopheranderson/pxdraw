@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -56,6 +57,7 @@ namespace pxdraw.api
                 string userEndpoint = Environment.GetEnvironmentVariable("PXDRAW_USER_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_USER_ENDPOINT environment variable does not exist.");
                 string adminEndpoint = Environment.GetEnvironmentVariable("PXDRAW_ADMIN_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_ADMIN_ENDPOINT environment variable does not exist.");
                 string logoutEndpoint = Environment.GetEnvironmentVariable("PXDRAW_LOGOUT_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_LOGOUT_ENDPOINT environment variable does not exist.");
+                string topTweetsEndpoint = Environment.GetEnvironmentVariable("PXDRAW_TOP_TWEETS_ENDPOINT" ?? null);
                 int throttleRate = GetThrottleRate();
 
                 var metadata = new Metadata
@@ -67,6 +69,7 @@ namespace pxdraw.api
                     UserEndpoint = userEndpoint,
                     LogoutEndpoint = logoutEndpoint,
                     ThrottleRate = throttleRate,
+                    TopTweetsEndpoint = topTweetsEndpoint,
                 };
 
                 var res = req.CreateResponse(HttpStatusCode.OK, metadata);
@@ -81,6 +84,26 @@ namespace pxdraw.api
                 return res;
             }
         }
+
+        [FunctionName("top-tweets")]
+        public static async Task<HttpResponseMessage> TopTweets([HttpTrigger(AuthorizationLevel.Anonymous, "get", "options", Route = null)]HttpRequestMessage req, ILogger log, ExecutionContext context)
+        {
+            try {
+                TweetService ts = TweetService.GetDefaultSingleton();
+                List<Tweet> tweets = await ts.GetTopTweets();
+                var res = req.CreateResponse(HttpStatusCode.OK, tweets);
+                ApplyCORSRules(req, res);
+                return res;
+            }
+            catch (Exception err)
+            {
+                log.LogError(err);
+                var res = req.CreateErrorResponse(HttpStatusCode.InternalServerError, $"Could not complete the request. Reference {context.InvocationId} for details.");
+                ApplyCORSRules(req, res);
+                return res;
+            }
+        }
+
 
         /// <summary>
         /// Retrieves information about the user
