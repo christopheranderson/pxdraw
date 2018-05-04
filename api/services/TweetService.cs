@@ -33,7 +33,7 @@ namespace pxdraw.api.services
         public async Task<List<Tweet>> GetTopTweets()
         {
             List<Tweet> tweets = new List<Tweet>();
-            SqlQuerySpec query = new SqlQuerySpec("SELECT TOP 20 url FROM c WHERE c.approved == true ORDER BY c._ts DESC");
+            SqlQuerySpec query = new SqlQuerySpec("SELECT TOP 20 c.url FROM c WHERE c.approved = true ORDER BY c._ts DESC");
             var queryable = _Client.CreateDocumentQuery<Tweet>(_CollectionUri, query).AsDocumentQuery();
 
             while (queryable.HasMoreResults)

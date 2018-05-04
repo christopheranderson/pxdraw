@@ -23,10 +23,7 @@
   <Import Condition=" Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Deployment\1.1\DeploymentProject.targets') " Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Deployment\1.1\DeploymentProject.targets" />
   <!-- vertag<:>end -->
   <ItemGroup>
-    <Content Include="azuredeploy-neuro.parameters.json" />
-    <Content Include="azuredeploy-westus.parameters.json" />
     <Content Include="azuredeploy.json" />
-    <Content Include="azuredeploy-seasia.parameters.json" />
     <None Include="Deployment.targets">
       <Visible>False</Visible>
     </None>
