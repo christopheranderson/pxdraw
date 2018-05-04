@@ -158,17 +158,17 @@ body {
     overflow: auto;
 }
 
+.tweets-container .top-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 15px 0px 15px;
+    align-items: flex-end;
+}
+
 .tweets-container .title {
-    text-align: center;
     font-weight: bold;
 }
 
-.tweet-area2 {
-    margin: 10px;
-    text-align: center;
-}
-
 #tweets {
-    /* border-top: 1px solid #cccccc; */
-    padding: 15px;
+    padding: 0px 15px;
 }

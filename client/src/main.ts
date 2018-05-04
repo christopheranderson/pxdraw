@@ -52,6 +52,7 @@ export interface FetchBoardData {
 
 interface TweetsResponse {
     url: string;
+    id: string;
 }
 
 export class Main {
@@ -376,12 +377,9 @@ export class Main {
                     return;
                 }
 
-                // TODO REMOVE!
-                // data = data.concat(data).concat(data).concat(data).concat(data).concat(data).concat(data).concat(data);
-
                 $.each(data, (index: number, trend: TweetsResponse) => {
                     twttr.widgets.createTweet(
-                        trend.url.split('/').pop(),
+                        trend.id,
                         document.getElementById('tweets'),
                         { conversation:'none', width: 400 }
                     );
