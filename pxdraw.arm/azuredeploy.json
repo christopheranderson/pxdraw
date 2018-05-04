@@ -73,7 +73,8 @@
     "board_blob_name": "board1",
     "board_base_url": "[if(equals(parameters('custom_blob_url'), ''), concat('https://', concat(toLower(parameters('base_name'))), '.blob.core.windows.net/'), parameters('custom_blob_url'))]",
     "user_collection": "users",
-    "tweet_collection": "tweets"
+    "tweet_collection": "dbs/pxdraw/colls/tweets",
+    "throttle_rate": "30"
 
   },
   "resources": [
@@ -358,7 +359,10 @@
             "PXDRAW_COSMOS_USER_COLLECTION_URI": "[concat('dbs/', parameters('cosmos_db_name'),'/colls/', parameters('cosmos_coll_name'))]",
             "PXDRAW_ADMIN_ENDPOINT": "[concat('https://', parameters('api-tf-endpoint'),'.net/.auth/login/aad?post_login_redirect_uri=', variables('client_url'))]",
             "PXDRAW_USER_ENDPOINT": "[concat('https://', parameters('api-tf-endpoint'),'.net/api/user')]",
-            "PXDRAW_LOGOUT_ENDPOINT": "[concat('https://', parameters('api-tf-endpoint'),'.net/.auth/logout?post_logout_redirect_uri=', variables('client_url'))]"
+            "PXDRAW_LOGOUT_ENDPOINT": "[concat('https://', parameters('api-tf-endpoint'),'.net/.auth/logout?post_logout_redirect_uri=', variables('client_url'))]",
+            "PXDRAW_TOP_TWEETS_ENDPOINT": "[concat('https://', parameters('api-tf-endpoint'),'.net/api/top-tweets')]",
+            "PXDRAW_THROTTLE_RATE": "[variables('throttle_rate')]",
+            "PXDRAW_TWEET_COLLECTION_URI": "[variables('tweet_collection')]"
           }
         }
       ]
