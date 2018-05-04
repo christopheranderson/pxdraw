@@ -22,7 +22,8 @@ module.exports = {
         }),
         new webpack.DefinePlugin({
             METADATA_ENDPOINT: JSON.stringify(process.env.PXDRAW_METADATA_ENDPOINT || "http://localhost:7071/api/metadata"),
-            ENABLE_TRENDING_TWEETS: !!(process.env.PXDRAW_ENABLE_TRENDING_TWEETS === 'true' || false)
+            ENABLE_TRENDING_TWEETS: !!(process.env.PXDRAW_ENABLE_TRENDING_TWEETS === 'true' || false),
+            AUTHREQUIRED: !!(process.env.PXDRAW_AUTHREQUIRED === "true" || false)
         })
     ]
 };

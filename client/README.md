@@ -6,6 +6,7 @@ This is the client app for build demo.
 - `PXDRAW_APPINSIGHTS_KEY`: sets the app insights key you want to use
 - `PXDRAW_REGION_LABEL`: sets the region label in the page title (defaults to "") (this is only used for the demo environments to show which region the site is in)
 - `PXDRAW_ENABLE_TRENDING_TWEETS`: Enables display of trending tweets: set to true to enable (disabled in demo environment)
+- `PXDRAW_AUTHREQUIRED`: Set to "true" to force auth before initializing websocket connection. Defaults to false.
 
 ## Build the client
 
