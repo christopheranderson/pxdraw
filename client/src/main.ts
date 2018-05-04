@@ -53,7 +53,7 @@ export class Main {
     public static readonly LOCALHOST_CLIENT_PRINCIPAL_ID = 'PrincicalId';
     public static readonly LOCALHOST_CLIENT_PRINCIPAL_IDP = 'aad'; // use twitter for non-admin
     private static readonly REFRESH_BOARD_DELAY_MS = 30000;
-    private static DRAW_DELAY_S = 30;
+    private static draw_delay_s = 30;
     private static readonly TIME_UPDATE_MS = 1000; // Update every second
 
     // state
@@ -201,7 +201,7 @@ export class Main {
 
         if (lastUpdate) {
             this.nextUpdateTime = lastUpdate;
-            this.nextUpdateTime.setSeconds(this.nextUpdateTime.getSeconds() + Main.DRAW_DELAY_S);
+            this.nextUpdateTime.setSeconds(this.nextUpdateTime.getSeconds() + Main.draw_delay_s);
         }
 
         this.startUpdateTimer();
@@ -240,7 +240,7 @@ export class Main {
                     this.websocketEndpoint = data.websocketEndpoint;
                     this.userEndpoint = data.userEndpoint;
                     this.logoutEndpoint = data.logoutEndpoint;
-                    Main.DRAW_DELAY_S = data.throttleRate;
+                    Main.draw_delay_s = data.throttleRate;
                     resolve();
                 },
                 error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
