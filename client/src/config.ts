@@ -1,8 +1,10 @@
-declare var METADATA_ENDPOINT: string
+declare var METADATA_ENDPOINT: string;
+declare var ENABLE_TRENDING_TWEETS: boolean;
 
 const config: AppConfig = {
     metadataEndpoint: METADATA_ENDPOINT,
-    isLocal: true
+    isLocal: true,
+    isTrendingTweetsEnabled: ENABLE_TRENDING_TWEETS
 }
 
 if (window && window.location && window.location.hostname) {
@@ -38,6 +40,7 @@ export interface hostinfo {
 export interface AppConfig {
     metadataEndpoint: string;
     isLocal: boolean;
+    isTrendingTweetsEnabled: boolean;
 }
 
 export { config };

@@ -12,6 +12,7 @@ import { UpdateClient } from "./updateClient";
 import { User } from "./user";
 
 const BATCH_SIZE = 300;
+declare var twttr: any;
 
 export interface Point2D {
     x: number;
@@ -41,11 +42,16 @@ export interface FetchMetadataResponseData {
     websocketEndpoint: string;
     userEndpoint: string;
     logoutEndpoint: string;
+    topTweetsEndpoint: string;
 }
 
 export interface FetchBoardData {
     board: ArrayBuffer;
     lsn: number;
+}
+
+interface TweetsResponse {
+    url: string;
 }
 
 export class Main {
@@ -54,6 +60,7 @@ export class Main {
     private static readonly REFRESH_BOARD_DELAY_MS = 30000;
     private static readonly DRAW_DELAY_S = 30;
     private static readonly TIME_UPDATE_MS = 1000; // Update every second
+    private static readonly REFRESH_TWITTER_TRENDS_MIN = 1;
 
     // state
     public canvas: Canvas;
@@ -69,6 +76,7 @@ export class Main {
     private websocketEndpoint: string;
     private userEndpoint: string;
     private logoutEndpoint: string;
+    private topTweetsEndpoint: string;
 
     // UI
     private loginUrl: KnockoutObservable<string>;
@@ -79,6 +87,7 @@ export class Main {
     private timerId: number;
     private remainingTimeDisplay: KnockoutObservable<string>;
     private isNow: KnockoutObservable<boolean>;
+    private isTrendingTweetsEnabled: KnockoutObservable<boolean>;
 
     public constructor() {
         this.canvas = new Canvas({
@@ -99,6 +108,7 @@ export class Main {
             this.canvas.drawMode(newValue? DrawModes.Freehand:DrawModes.Pixel);
         });
         this.timerId = 0;
+        this.isTrendingTweetsEnabled = ko.observable(false);
     }
 
     public async init(){
@@ -111,6 +121,7 @@ export class Main {
         // TODO Remove test code
         // this.getBoardEndpoint = 'https://pxdrawbuild18dev.blob.core.windows.net/dev/board1';
         // this.websocketEndpoint = 'https://pxdraw-build18-notifcations.azurewebsites.net/hubs/notifications';
+        // this.topTweetsEndpoint = 'https://pxdrawwestus-api.azurewebsites.net/api/top-tweets';
         // this.userEndpoint = 'http://blah';
         // this.loginEndpoint = 'http://login';
         // this.logoutEndpoint = 'http://logout';
@@ -142,6 +153,12 @@ export class Main {
         // Periodic board update
         this.updateBoard();
         setInterval(this.updateBoard.bind(this), Main.REFRESH_BOARD_DELAY_MS);
+
+        this.isTrendingTweetsEnabled(config.isTrendingTweetsEnabled);
+        if (config.isTrendingTweetsEnabled) {
+            this.updateTwitterTrend();
+            setInterval(this.updateTwitterTrend.bind(this), Main.REFRESH_TWITTER_TRENDS_MIN * 60 * 1000);
+        }
     }
 
     private processFetchBoardResponse(data: ArrayBuffer) {
@@ -239,6 +256,7 @@ export class Main {
                     this.websocketEndpoint = data.websocketEndpoint;
                     this.userEndpoint = data.userEndpoint;
                     this.logoutEndpoint = data.logoutEndpoint;
+                    this.topTweetsEndpoint = data.topTweetsEndpoint;
                     resolve();
                 },
                 error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
@@ -346,6 +364,33 @@ export class Main {
             }));
         }
         return Promise.all(promises);
+    }
+
+    private updateTwitterTrend() {
+        $.ajax({
+            type: 'GET',
+            url: this.topTweetsEndpoint,
+            success: (data: any, textStatus: JQuery.Ajax.SuccessTextStatus, jqXHR: JQuery.jqXHR): void => {
+                if (!Array.isArray(data)) {
+                    console.error('Invalid twitter trend received');
+                    return;
+                }
+
+                // TODO REMOVE!
+                // data = data.concat(data).concat(data).concat(data).concat(data).concat(data).concat(data).concat(data);
+
+                $.each(data, (index: number, trend: TweetsResponse) => {
+                    twttr.widgets.createTweet(
+                        trend.url.split('/').pop(),
+                        document.getElementById('tweets'),
+                        { conversation:'none', width: 400 }
+                    );
+                });
+            },
+            error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
+                console.error(`Failed to get trend:${errorThrown}`);
+            }
+        });
     }
 }
 

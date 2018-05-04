@@ -3,15 +3,16 @@ body {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 .header {
     background-color: #002050;
     color: white;
-    font-family: Arial, Helvetica, sans-serif;
     display: flex;
     padding: 10px;
     vertical-align: middle;
+    flex-shrink: 0;
 }
 
 .header img {
@@ -122,7 +123,6 @@ body {
     font-size: 14px;
     color: #ffffff;
     cursor: move;
-    font-family: Arial, Helvetica, sans-serif;
 }
 
 .header-block-container {
@@ -151,4 +151,24 @@ body {
 .palette-container input {
     position: absolute;
     bottom: 0px;
+}
+
+.tweets-container {
+    border-left: 1px solid #cccccc;
+    overflow: auto;
+}
+
+.tweets-container .title {
+    text-align: center;
+    font-weight: bold;
+}
+
+.tweet-area2 {
+    margin: 10px;
+    text-align: center;
+}
+
+#tweets {
+    /* border-top: 1px solid #cccccc; */
+    padding: 15px;
 }
