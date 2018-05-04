@@ -13,3 +13,4 @@ TBD
 - `PXDRAW_LOGIN_ENDPOINT` : Login Endpoint (aka Easy Auth endpoint)
 - `PXDRAW_UPDATEPIXEL_ENDPOINT` : Update pixel endpoint (aka /api/update-pixel)
 - `PXDRAW_WEBSOCKET_ENDPOINT` : SignalR endpoint
+- `PXDRAW_TWEET_COLLECTION_URI`: Tweet collection
