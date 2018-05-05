@@ -6,6 +6,7 @@ import { DrawingBuffer } from "./drawingBuffer";
 
 interface CanvasParameters {
     onPixelUpdatesSubmitted: (updates: PixelUpdate[]) => void; // called when pixel updates submitted by user
+    onDisabledPixelInsert: () => void; // called when the canvas receives a pixel update when in Disabled mode
 }
 
 enum TouchStates {
@@ -389,6 +390,8 @@ export class Canvas {
                     this.queuePixelUpdate(update);
                 });
                 this.params.onPixelUpdatesSubmitted(this.drawingBuffer.getAllUpdates());
+            } else if(this.drawMode() === DrawModes.Disabled && !hasMouseMoved) {
+                this.params.onDisabledPixelInsert();
             }
             this.drawingBuffer.reset();
         }

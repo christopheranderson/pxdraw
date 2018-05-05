@@ -85,7 +85,14 @@ export class Main {
 
     public constructor() {
         this.canvas = new Canvas({
-            onPixelUpdatesSubmitted: this.onPixelUpdatesFromUI.bind(this)
+            onPixelUpdatesSubmitted: this.onPixelUpdatesFromUI.bind(this),
+            onDisabledPixelInsert: () => {
+                if(!this.isLoggedIn()) {
+                    alert("You must be logged in to insert a pixel.\nClick the login button in the top right to login.");
+                } else {
+                    alert(`You must wait ${this.getRemainingMsBeforeDraw()} before your next insert.`);
+                }
+            },
         });
 
         this.isNow = ko.observable(false);
