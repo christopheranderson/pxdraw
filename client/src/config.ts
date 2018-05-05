@@ -1,9 +1,11 @@
 declare var METADATA_ENDPOINT: string;
+declare var ENABLE_TRENDING_TWEETS: boolean;
 declare var AUTHREQUIRED: boolean;
 
 const config: AppConfig = {
     metadataEndpoint: METADATA_ENDPOINT,
     isLocal: true,
+    isTrendingTweetsEnabled: ENABLE_TRENDING_TWEETS,
     isAuthRequired: AUTHREQUIRED
 }
 
@@ -40,6 +42,7 @@ export interface hostinfo {
 export interface AppConfig {
     metadataEndpoint: string;
     isLocal: boolean;
+    isTrendingTweetsEnabled: boolean;
     isAuthRequired: boolean;
 }
 
