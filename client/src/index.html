@@ -74,6 +74,11 @@
                 <a href="https://twitter.com/intent/tweet?button_hashtag=CosmosDB&ref_src=twsrc%5Etfw&text=Drawing%20%23%3Cuse%20a%20hashtag%20to%20describe%20your%20effort%3E%20with%20love%20on&hashtags=Azure,PxDraw"
                     class="twitter-hashtag-button" data-size="large" data-show-count="false">Tweet #CosmosDB</a>
             </div>
+            <div class="zoom-buttons-container">
+                <div class="zoom-button" id="zoom-in" data-bind="click: canvas.zoomIn.bind(canvas)"></div>
+                <div class="button-separator"></div>
+                <div class="zoom-button" id="zoom-out" data-bind="click: canvas.zoomOut(canvas)"></div>
+            </div>
         </div>
         <div class="tweets-container" style="display:none" data-bind="visible: isTrendingTweetsEnabled">
             <div class="top-line">
