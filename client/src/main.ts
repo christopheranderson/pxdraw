@@ -80,6 +80,7 @@ export class Main {
     private userEndpoint: string;
     private logoutEndpoint: string;
     private topTweetsEndpoint: string;
+    private twitterUpdateId: number;
 
     // UI
     private loginUrl: KnockoutObservable<string>;
@@ -92,6 +93,7 @@ export class Main {
     private isNow: KnockoutObservable<boolean>;
     private isPreReleaseMode: KnockoutObservable<boolean>;
     private isTrendingTweetsEnabled: KnockoutObservable<boolean>;
+    private isTweetPaneExpanded: KnockoutObservable<boolean>;
 
     public constructor() {
         this.canvas = new Canvas({
@@ -121,6 +123,7 @@ export class Main {
         this.timerId = 0;
         this.isPreReleaseMode = ko.observable(false);
         this.isTrendingTweetsEnabled = ko.observable(false);
+        this.isTweetPaneExpanded = ko.observable(false);
     }
 
     public async init(){
@@ -174,10 +177,6 @@ export class Main {
         setInterval(this.updateBoard.bind(this), Main.REFRESH_BOARD_DELAY_MS);
 
         this.isTrendingTweetsEnabled(config.isTrendingTweetsEnabled);
-        if (config.isTrendingTweetsEnabled) {
-            this.updateTwitterTrend().then(() => this.canvas.centerCanvas());
-            setInterval(this.updateTwitterTrend.bind(this), Main.REFRESH_TWITTER_TRENDS_MIN * 60 * 1000);
-        }
     }
 
     private processFetchBoardResponse(data: ArrayBuffer) {
@@ -397,16 +396,26 @@ export class Main {
                         return;
                     }
 
+                    const tweetsParentElt = document.getElementById('tweets');
+                    const oldChildrenCount = tweetsParentElt.childElementCount;
                     const promises: Promise<any>[] = [];
                     $.each(data, (index: number, trend: TweetsResponse) => {
+                        // This adds children to tweetsParentElt asynchronously
                         const p = twttr.widgets.createTweet(
                             trend.id,
-                            document.getElementById('tweets'),
+                            tweetsParentElt,
                             { conversation:'none', width: 400 }
                         );
                         promises.push(p);
                     });
-                    Promise.all(promises).then(() => resolve());
+
+                    Promise.all(promises).then(() => {
+                        // Must part with the old children :(
+                        for (let i = 0; i < oldChildrenCount; i++) {
+                            tweetsParentElt.removeChild(tweetsParentElt.firstChild);
+                        }
+                        resolve();
+                    });
                 },
                 error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
                     console.error(`Failed to get trend:${errorThrown}`);
@@ -414,6 +423,32 @@ export class Main {
                 }
             });
         });
+    }
+
+    private toggleTweetPane() {
+        this.isTweetPaneExpanded(!this.isTweetPaneExpanded());
+
+        if (config.isTrendingTweetsEnabled && this.isTweetPaneExpanded()) {
+            const parentElt = document.getElementById("tweet-area2");
+            if (parentElt.childElementCount === 0) {
+                // Create twitter button at run-time, because button won't size properly if initial container visible is none
+                console.log('adding button')
+                twttr.widgets.createHashtagButton(
+                    'CosmosDB',
+                    parentElt,
+                    {
+                        size: 'large',
+                        text: 'Drawing #<use a hashtag to describe your effort> with love on',
+                        hashtags: 'Azure,PxDraw'
+                    }
+                );
+            }
+
+            this.updateTwitterTrend().then(() => this.canvas.centerCanvas());
+            this.twitterUpdateId = setInterval(this.updateTwitterTrend.bind(this), Main.REFRESH_TWITTER_TRENDS_MIN * 60 * 1000);
+        } else {
+            clearInterval(this.twitterUpdateId);
+        }
     }
 }
 
