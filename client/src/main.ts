@@ -90,7 +90,7 @@ export class Main {
                 if(!this.isLoggedIn()) {
                     alert("You must be logged in to insert a pixel.\nClick the login button in the top right to login.");
                 } else {
-                    alert(`You must wait ${this.getRemainingMsBeforeDraw()} before your next insert.`);
+                    alert(`You must wait ${this.getRemainingMsBeforeDraw()/1000} seconds before your next insert.`);
                 }
             },
         });
