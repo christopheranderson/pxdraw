@@ -179,7 +179,7 @@ export class Main {
             setInterval(this.updateTwitterTrend.bind(this), Main.REFRESH_TWITTER_TRENDS_MIN * 60 * 1000);
         }
 
-        if (!this.isAdmin()) {
+        if (this.isLoggedIn() && !this.isAdmin()) {
             this.canvas.executeZoom(Canvas.INITIAL_ZOOM);
         }
     }
