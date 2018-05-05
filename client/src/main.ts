@@ -42,6 +42,7 @@ export interface FetchMetadataResponseData {
     userEndpoint: string;
     logoutEndpoint: string;
     throttleRate: number;
+    isPreRelease: boolean;
 }
 
 export interface FetchBoardData {
@@ -80,6 +81,7 @@ export class Main {
     private timerId: number;
     private remainingTimeDisplay: KnockoutObservable<string>;
     private isNow: KnockoutObservable<boolean>;
+    private isPreReleaseMode: KnockoutObservable<boolean>;
 
     public constructor() {
         this.canvas = new Canvas({
@@ -100,6 +102,7 @@ export class Main {
             this.canvas.drawMode(newValue? DrawModes.Freehand:DrawModes.Pixel);
         });
         this.timerId = 0;
+        this.isPreReleaseMode = ko.observable(false);
     }
 
     public async init(){
@@ -108,6 +111,11 @@ export class Main {
         });
 
         await this.fetchMetadata();
+
+        if(this.isPreReleaseMode()) {
+            // Don't do anything else if we're still in pre-release mode.
+            return;
+        }
 
         // TODO Remove test code
         // this.getBoardEndpoint = 'https://pxdrawbuild18dev.blob.core.windows.net/dev/board1';
@@ -243,6 +251,7 @@ export class Main {
                     this.userEndpoint = data.userEndpoint;
                     this.logoutEndpoint = data.logoutEndpoint;
                     Main.draw_delay_s = data.throttleRate;
+                    this.isPreReleaseMode(!!(data.isPreRelease));
                     resolve();
                 },
                 error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
