@@ -71,6 +71,7 @@ namespace pxdraw.api
                     LogoutEndpoint = logoutEndpoint,
                     ThrottleRate = throttleRate,
                     TopTweetsEndpoint = topTweetsEndpoint,
+                    IsPreRelease = isPreRelease,
                 };
 
                 var res = req.CreateResponse(HttpStatusCode.OK, metadata);
