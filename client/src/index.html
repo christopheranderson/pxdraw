@@ -36,10 +36,10 @@
         <img src="img/CosmosDB_rgb_ui_darktheme.svg">
         <div class="header-block-container text-container">
             <div class="title">Azure Cosmos DB
-                <strong>PxDRAW</strong>
+                <strong>PxDraw</strong>
                 <%= REGION %>
             </div>
-            <div class="description">Welcome to Azure Cosmos DB PxDRAW! PxDRAW is a collaborative project. Pick a color on the left and draw on the
+            <div class="description">Welcome to Azure Cosmos DB PxDraw! PxDraw is a collaborative project. Pick a color on the left and draw on the
                 canvas, one pixel a time.</div>
         </div>
         <div class="header-block-container" style="display:none" data-bind="visible:isLoggedIn()">
@@ -74,19 +74,21 @@
                 <a href="https://twitter.com/intent/tweet?button_hashtag=CosmosDB&ref_src=twsrc%5Etfw&text=Drawing%20%23%3Cuse%20a%20hashtag%20to%20describe%20your%20effort%3E%20with%20love%20on&hashtags=Azure,PxDraw"
                     class="twitter-hashtag-button" data-size="large" data-show-count="false">Tweet #CosmosDB</a>
             </div>
+            <img class="twitter-expand" src="img/Twitter.svg" data-bind="click: toggleTweetPane">
             <div class="zoom-buttons-container">
                 <div class="zoom-button" id="zoom-in" data-bind="click: canvas.zoomIn.bind(canvas)"></div>
                 <div class="button-separator"></div>
                 <div class="zoom-button" id="zoom-out" data-bind="click: canvas.zoomOut(canvas)"></div>
             </div>
         </div>
-        <div class="tweets-container" style="display:none" data-bind="visible: isTrendingTweetsEnabled">
+        <div class="tweets-pane" style="display:none" data-bind="visible: isTrendingTweetsEnabled && isTweetPaneExpanded">
             <div class="top-line">
                 <div class="title">Trending Tweets</div>
-                <a href="https://twitter.com/intent/tweet?button_hashtag=CosmosDB&ref_src=twsrc%5Etfw&text=Drawing%20%23%3Cuse%20a%20hashtag%20to%20describe%20your%20effort%3E%20with%20love%20on&hashtags=Azure,PxDraw"
-                    class="twitter-hashtag-button" data-size="large" data-show-count="false">Tweet #CosmosDB</a>
+                <div id="tweet-area2"></div>
             </div>
-            <div id="tweets"></div>
+            <div class="tweets-container">
+                <div id="tweets"></div>
+            </div>
         </div>
     </div>
     <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
