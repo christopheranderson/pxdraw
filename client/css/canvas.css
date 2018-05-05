@@ -138,6 +138,10 @@ body {
     margin: 0px 20px;
 }
 
+.header-block-container:not(.text-container) {
+    flex-shrink: 0;
+}
+
 .header-block-title {
     font-size: 12px;
     text-align: center;
