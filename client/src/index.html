@@ -70,13 +70,21 @@
             <canvas id="canvas" width="1000" height="1000"></canvas>
             <canvas id="viewport-canvas"></canvas>
             <div id="coordinates-container" data-bind="text: canvas.currentPositionStr, visible: canvas.currentPositionStr"></div>
-            <div class="tweet-area">
+            <div class="tweet-area" data-bind="visible: !isTrendingTweetsEnabled()">
                 <a href="https://twitter.com/intent/tweet?button_hashtag=CosmosDB&ref_src=twsrc%5Etfw&text=Drawing%20%23%3Cuse%20a%20hashtag%20to%20describe%20your%20effort%3E%20with%20love%20on&hashtags=Azure,PxDraw"
                     class="twitter-hashtag-button" data-size="large" data-show-count="false">Tweet #CosmosDB</a>
-                <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
             </div>
         </div>
+        <div class="tweets-container" style="display:none" data-bind="visible: isTrendingTweetsEnabled">
+            <div class="top-line">
+                <div class="title">Trending Tweets</div>
+                <a href="https://twitter.com/intent/tweet?button_hashtag=CosmosDB&ref_src=twsrc%5Etfw&text=Drawing%20%23%3Cuse%20a%20hashtag%20to%20describe%20your%20effort%3E%20with%20love%20on&hashtags=Azure,PxDraw"
+                    class="twitter-hashtag-button" data-size="large" data-show-count="false">Tweet #CosmosDB</a>
+            </div>
+            <div id="tweets"></div>
+        </div>
     </div>
+    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 </body>
 
 </html>

@@ -192,7 +192,7 @@ export class Canvas {
         this.centerCanvas();
     }
 
-    private centerCanvas() {
+    public centerCanvas() {
         const BORDER_PX = 1;
         const containerWidth = this.canvasContainerElement.width();
         const containerHeight = this.canvasContainerElement.height();
