@@ -35,6 +35,7 @@ export class Canvas {
     private static readonly ZOOM_MAX_SCALE = 40;
     private static readonly UNSTABLE_ZOOM = 0.5;
     private static readonly MIN_MOUSE_MOVE_PX = 5; // minimum mouse move that qualifies as a drag
+    public static readonly INITIAL_ZOOM = 20;
 
     // 16 colors according to this: http://www.december.com/html/spec/color16codes.html
     private static readonly COLOR_PALETTE_16: CanvasColor[] = [
@@ -514,16 +515,16 @@ export class Canvas {
 
     /**
      *
-     * @param zoomFlag true: zoom in, false: zoom out
+     * @param value true: zoom in, false: zoom out, or number for zoom value
      */
-    private executeZoom(zoomFlag: boolean) {
+    public executeZoom(value: boolean | number) {
         const containerPos = this.canvasContainerElement.position();
         const center:Point2D = {
             x: containerPos.left + this.canvasContainerElement.width() / 2,
             y: containerPos.top + this.canvasContainerElement.height() / 2
         };
 
-        this.panZoomElement.panzoom('zoom', zoomFlag, {
+        this.panZoomElement.panzoom('zoom', value, {
             animate: false,
             focal: {
                 clientX: center.x,
