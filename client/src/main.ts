@@ -44,6 +44,7 @@ export interface FetchMetadataResponseData {
     logoutEndpoint: string;
     topTweetsEndpoint: string;
     throttleRate: number;
+    isPreRelease: boolean;
 }
 
 export interface FetchBoardData {
@@ -89,11 +90,19 @@ export class Main {
     private timerId: number;
     private remainingTimeDisplay: KnockoutObservable<string>;
     private isNow: KnockoutObservable<boolean>;
+    private isPreReleaseMode: KnockoutObservable<boolean>;
     private isTrendingTweetsEnabled: KnockoutObservable<boolean>;
 
     public constructor() {
         this.canvas = new Canvas({
-            onPixelUpdatesSubmitted: this.onPixelUpdatesFromUI.bind(this)
+            onPixelUpdatesSubmitted: this.onPixelUpdatesFromUI.bind(this),
+            onDisabledPixelInsert: () => {
+                if(!this.isLoggedIn()) {
+                    alert("You must be logged in to insert a pixel.\nClick the login button in the top right to login.");
+                } else {
+                    alert(`You must wait ${this.getRemainingMsBeforeDraw()/1000} seconds before your next insert.`);
+                }
+            },
         });
 
         this.isNow = ko.observable(false);
@@ -110,6 +119,7 @@ export class Main {
             this.canvas.drawMode(newValue? DrawModes.Freehand:DrawModes.Pixel);
         });
         this.timerId = 0;
+        this.isPreReleaseMode = ko.observable(false);
         this.isTrendingTweetsEnabled = ko.observable(false);
     }
 
@@ -119,6 +129,11 @@ export class Main {
         });
 
         await this.fetchMetadata();
+
+        if(this.isPreReleaseMode()) {
+            // Don't do anything else if we're still in pre-release mode.
+            return;
+        }
 
         // TODO Remove test code
         // this.getBoardEndpoint = 'https://pxdrawbuild18dev.blob.core.windows.net/dev/board1';
@@ -262,6 +277,7 @@ export class Main {
                     this.logoutEndpoint = data.logoutEndpoint;
                     this.topTweetsEndpoint = data.topTweetsEndpoint;
                     Main.draw_delay_s = data.throttleRate;
+                    this.isPreReleaseMode(!!(data.isPreRelease));
                     resolve();
                 },
                 error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {

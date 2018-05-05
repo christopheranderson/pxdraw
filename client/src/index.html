@@ -6,7 +6,7 @@
     <title>PxDraw - Microsoft</title>
     <link rel="stylesheet" href="node_modules/jquery-ui-dist/jquery-ui.min.css" type="text/css" charset="UTF-8" />
     <link rel="stylesheet" href="css/canvas.css" type="text/css" charset="UTF-8" />
-    <link rel="shortcut icon" type="image/png" href="img/favicon.png"/>
+    <link rel="shortcut icon" type="image/png" href="img/favicon.png" />
     <script type="text/javascript">
         var appInsights = window.appInsights || function (a) {
             function b(a) { c[a] = function () { var b = arguments; c.queue.push(function () { c[a].apply(c, b) }) } } var c = { config: a }, d = document, e = window; setTimeout(function () { var b = d.createElement("script"); b.src = a.url || "https://az416426.vo.msecnd.net/scripts/a/ai.0.js", d.getElementsByTagName("script")[0].parentNode.appendChild(b) }); try { c.cookie = d.cookie } catch (a) { } c.queue = []; for (var f = ["Event", "Exception", "Metric", "PageView", "Trace", "Dependency"]; f.length;)b("track" + f.pop()); if (b("setAuthenticatedUserContext"), b("clearAuthenticatedUserContext"), b("startTrackEvent"), b("stopTrackEvent"), b("startTrackPage"), b("stopTrackPage"), b("flush"), !a.disableExceptionTracking) { f = "onerror", b("_" + f); var g = e[f]; e[f] = function (a, b, d, e, h) { var i = g && g(a, b, d, e, h); return !0 !== i && c["_" + f](a, b, d, e, h), i } } return c
@@ -26,6 +26,12 @@
 </head>
 
 <body>
+    <div id="prerelease-overlay" style="display:none" data-bind="visible:isPreReleaseMode()">
+        <div id="prerelease-box">
+            <img class="icon-xlarge" src="img/CosmosDB_rgb_mono_darktheme.svg">
+            <h1>PxDraw will open up for all users Monday, 11:30 AM PDT</h1>
+        </div>
+    </div>
     <div class="header">
         <img src="img/CosmosDB_rgb_ui_darktheme.svg">
         <div class="header-block-container text-container">
@@ -65,8 +71,8 @@
             <canvas id="viewport-canvas"></canvas>
             <div id="coordinates-container" data-bind="text: canvas.currentPositionStr, visible: canvas.currentPositionStr"></div>
             <div class="tweet-area" data-bind="visible: !isTrendingTweetsEnabled()">
-                <a href="https://twitter.com/intent/tweet?button_hashtag=CosmosDB&ref_src=twsrc%5Etfw&text=Drawing%20%23%3Cuse%20a%20hashtag%20to%20describe%20your%20effort%3E%20with%20love%20on&hashtags=Azure,PxDraw" class="twitter-hashtag-button"
-                    data-size="large" data-show-count="false">Tweet #CosmosDB</a>
+                <a href="https://twitter.com/intent/tweet?button_hashtag=CosmosDB&ref_src=twsrc%5Etfw&text=Drawing%20%23%3Cuse%20a%20hashtag%20to%20describe%20your%20effort%3E%20with%20love%20on&hashtags=Azure,PxDraw"
+                    class="twitter-hashtag-button" data-size="large" data-show-count="false">Tweet #CosmosDB</a>
             </div>
         </div>
         <div class="tweets-container" style="display:none" data-bind="visible: isTrendingTweetsEnabled">

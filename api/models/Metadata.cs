@@ -25,5 +25,7 @@ namespace pxdraw.api.models
         public int ThrottleRate { get; set; }
         [JsonProperty("topTweetsEndpoint", NullValueHandling = NullValueHandling.Include)]
         public string TopTweetsEndpoint { get; set; }
+        [JsonProperty("isPreRelease")]
+        public bool IsPreRelease { get; set; }
     }
 }

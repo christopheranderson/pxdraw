@@ -58,6 +58,7 @@ namespace pxdraw.api
                 string adminEndpoint = Environment.GetEnvironmentVariable("PXDRAW_ADMIN_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_ADMIN_ENDPOINT environment variable does not exist.");
                 string logoutEndpoint = Environment.GetEnvironmentVariable("PXDRAW_LOGOUT_ENDPOINT") ?? throw new InvalidOperationException("PXDRAW_LOGOUT_ENDPOINT environment variable does not exist.");
                 string topTweetsEndpoint = Environment.GetEnvironmentVariable("PXDRAW_TOP_TWEETS_ENDPOINT" ?? null);
+                bool isPreRelease = (Environment.GetEnvironmentVariable("PXDRAW_ISPRERELEASE") == "true");
                 int throttleRate = GetThrottleRate();
 
                 var metadata = new Metadata
