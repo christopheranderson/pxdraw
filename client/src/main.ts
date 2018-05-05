@@ -177,6 +177,10 @@ export class Main {
         setInterval(this.updateBoard.bind(this), Main.REFRESH_BOARD_DELAY_MS);
 
         this.isTrendingTweetsEnabled(config.isTrendingTweetsEnabled);
+
+        if (this.isLoggedIn() && !this.isAdmin()) {
+            this.canvas.executeZoom(Canvas.INITIAL_ZOOM);
+        }
     }
 
     private processFetchBoardResponse(data: ArrayBuffer) {
