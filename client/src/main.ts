@@ -413,13 +413,17 @@ export class Main {
                         promises.push(p);
                     });
 
-                    Promise.all(promises).then(() => {
-                        // Must part with the old children :(
-                        for (let i = 0; i < oldChildrenCount; i++) {
-                            tweetsParentElt.removeChild(tweetsParentElt.firstChild);
+                    (async () => {
+                        try {
+                            await Promise.all(promises)
+                            // Must part with the old children :(
+                            for (let i = 0; i < oldChildrenCount; i++) {
+                                tweetsParentElt.removeChild(tweetsParentElt.firstChild);
+                            }
+                        } finally {
+                            resolve();
                         }
-                        resolve();
-                    });
+                    })();
                 },
                 error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown: string): void => {
                     console.error(`Failed to get trend:${errorThrown}`);
@@ -448,7 +452,7 @@ export class Main {
                 );
             }
 
-            this.updateTwitterTrend().then(() => this.canvas.centerCanvas());
+            this.updateTwitterTrend();
             this.twitterUpdateId = setInterval(this.updateTwitterTrend.bind(this), Main.REFRESH_TWITTER_TRENDS_MIN * 60 * 1000);
         } else {
             clearInterval(this.twitterUpdateId);
