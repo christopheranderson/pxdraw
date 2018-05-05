@@ -75,9 +75,9 @@
                     class="twitter-hashtag-button" data-size="large" data-show-count="false">Tweet #CosmosDB</a>
             </div>
             <div class="zoom-buttons-container">
-                <img class="zoom-button" id="zoom-in" src="img/Zoom_in.svg" data-bind="click: canvas.zoomIn.bind(canvas)">
+                <div class="zoom-button" id="zoom-in" data-bind="click: canvas.zoomIn.bind(canvas)"></div>
                 <div class="button-separator"></div>
-                <img class="zoom-button" id="zoom-out" src="img/Zoom_out.svg" data-bind="click: canvas.zoomOut(canvas)">
+                <div class="zoom-button" id="zoom-out" data-bind="click: canvas.zoomOut(canvas)"></div>
             </div>
         </div>
         <div class="tweets-container" style="display:none" data-bind="visible: isTrendingTweetsEnabled">

@@ -238,8 +238,28 @@ body {
 
 .zoom-button {
     cursor: pointer;
-    height: 25px;
-    width: 25px;
+    height: 20px;
+    width: 20px;
     margin: 5px;
     z-index: 30;
+}
+
+#zoom-in {
+    background: url("../img/Zoom_in.svg") no-repeat;
+    background-size:cover;
+}
+
+#zoom-in:hover {
+    background: url("../img/Zoom_in_on_hover.svg") no-repeat;
+    background-size:cover;
+}
+
+#zoom-out {
+    background: url("../img/Zoom_out.svg") no-repeat;
+    background-size:cover;
+}
+
+#zoom-out:hover {
+    background: url("../img/Zoom_out_on_hover.svg") no-repeat;
+    background-size:cover;
 }
