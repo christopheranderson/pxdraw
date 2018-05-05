@@ -511,4 +511,32 @@ export class Canvas {
         this.viewportContext.drawImage(this.canvas, sx, sy, sw, sh, dx, dy, dw, dh);
         // console.log('updateViewportCanvas', sx, sy, sw, sh, dx, dy, dw, dh);
     }
+
+    /**
+     *
+     * @param zoomFlag true: zoom in, false: zoom out
+     */
+    private executeZoom(zoomFlag: boolean) {
+        const containerPos = this.canvasContainerElement.position();
+        const center:Point2D = {
+            x: containerPos.left + this.canvasContainerElement.width() / 2,
+            y: containerPos.top + this.canvasContainerElement.height() / 2
+        };
+
+        this.panZoomElement.panzoom('zoom', zoomFlag, {
+            animate: false,
+            focal: {
+                clientX: center.x,
+                clientY: center.y
+            }
+        });
+    }
+
+    private zoomIn(data:any, e: Event) {
+        this.executeZoom(false);
+    }
+
+    private zoomOut(data:any, e: Event) {
+        this.executeZoom(true);
+    }
 }
