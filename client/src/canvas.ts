@@ -36,6 +36,7 @@ export class Canvas {
     private static readonly UNSTABLE_ZOOM = 0.5;
     private static readonly MIN_MOUSE_MOVE_PX = 5; // minimum mouse move that qualifies as a drag
     public static readonly INITIAL_ZOOM = 20;
+    public static readonly THUMBNAIL_FACTOR = 0.1;
 
     // 16 colors according to this: http://www.december.com/html/spec/color16codes.html
     private static readonly COLOR_PALETTE_16: CanvasColor[] = [
@@ -76,6 +77,8 @@ export class Canvas {
     private context: CanvasRenderingContext2D;
     private viewportCanvas: HTMLCanvasElement;
     private viewportContext: CanvasRenderingContext2D;
+    private thumbnailCanvas: HTMLCanvasElement;
+    private thumbnailContext: CanvasRenderingContext2D;
 
     private currentPositionStr: KnockoutObservable<string>;
     private availableColors: KnockoutObservableArray<CanvasColor>;
@@ -129,6 +132,8 @@ export class Canvas {
         this.context = this.canvas.getContext('2d');
         this.viewportCanvas = <HTMLCanvasElement>document.getElementById('viewport-canvas');
         this.viewportContext = this.viewportCanvas.getContext('2d');
+        this.thumbnailCanvas = <HTMLCanvasElement>document.getElementById('thumbnail-canvas');
+        this.thumbnailContext = this.thumbnailCanvas.getContext('2d');
 
         this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this), false);
         this.canvas.addEventListener('touchstart', this.onMouseDown.bind(this), false);
@@ -510,7 +515,50 @@ export class Canvas {
         (<any>this.viewportContext).msImageSmoothingEnabled = false;
         this.viewportContext.imageSmoothingEnabled = false;
         this.viewportContext.drawImage(this.canvas, sx, sy, sw, sh, dx, dy, dw, dh);
-        // console.log('updateViewportCanvas', sx, sy, sw, sh, dx, dy, dw, dh);
+
+        this.updateThumbnailCanvas();
+    }
+
+    private updateThumbnailCanvas() {
+        const c = this.canvas.getBoundingClientRect();
+        const v = this.viewportCanvas.getBoundingClientRect();
+        const cx = c.left - v.left;
+        const cy = c.top - v.top;
+        const tWidth = (v.width / c.width) * Canvas.BOARD_WIDTH_PX * Canvas.THUMBNAIL_FACTOR;
+        const tHeight = (v.height / c.height) * Canvas.BOARD_HEIGHT_PX * Canvas.THUMBNAIL_FACTOR;
+
+        let sx = 0;
+        let sy = 0;
+        let sw = Canvas.BOARD_WIDTH_PX;
+        let sh = Canvas.BOARD_HEIGHT_PX;
+        let dx = 0;
+        let dy = 0;
+        let dw = Canvas.BOARD_WIDTH_PX * Canvas.THUMBNAIL_FACTOR;
+        let dh = Canvas.BOARD_HEIGHT_PX *  Canvas.THUMBNAIL_FACTOR;
+
+        this.thumbnailContext.mozImageSmoothingEnabled = false;
+        this.thumbnailContext.webkitImageSmoothingEnabled = false;
+        (<any>this.thumbnailContext).msImageSmoothingEnabled = false;
+        this.thumbnailContext.imageSmoothingEnabled = false;
+        this.thumbnailContext.drawImage(this.canvas, sx, sy, sw, sh, dx, dy, dw, dh);
+
+        // Draw rectangle that represents the viewport
+        // More precise and self-contained than using this.zoomScale
+        const zoomScale = c.width / Canvas.BOARD_WIDTH_PX;
+
+        const topLeft: Point2D = {
+            x: -cx * Canvas.THUMBNAIL_FACTOR / zoomScale,
+            y: -cy * Canvas.THUMBNAIL_FACTOR / zoomScale
+        };
+
+        this.thumbnailContext.beginPath();
+        this.thumbnailContext.moveTo(topLeft.x, topLeft.y);
+        this.thumbnailContext.lineTo(topLeft.x + tWidth, topLeft.y);
+        this.thumbnailContext.lineTo(topLeft.x + tWidth, topLeft.y + tHeight);
+        this.thumbnailContext.lineTo(topLeft.x, topLeft.y + tHeight);
+        this.thumbnailContext.lineTo(topLeft.x, topLeft.y);
+        this.thumbnailContext.stroke();
+        this.thumbnailContext.closePath();
     }
 
     /**
