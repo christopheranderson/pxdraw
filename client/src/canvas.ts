@@ -36,7 +36,6 @@ export class Canvas {
     private static readonly UNSTABLE_ZOOM = 0.5;
     private static readonly MIN_MOUSE_MOVE_PX = 5; // minimum mouse move that qualifies as a drag
     public static readonly INITIAL_ZOOM = 20;
-    public static readonly THUMBNAIL_FACTOR = 0.1;
 
     // 16 colors according to this: http://www.december.com/html/spec/color16codes.html
     private static readonly COLOR_PALETTE_16: CanvasColor[] = [
@@ -93,6 +92,7 @@ export class Canvas {
     private lastMouseDownPosition: Point2D;
     private totalDragDistance: number;
     public drawMode: KnockoutObservable<DrawModes>;
+    private thumbnailFactor: number;
 
     // This array buffer will hold color data to be drawn to the canvas.
     private buffer: ArrayBuffer;
@@ -134,6 +134,7 @@ export class Canvas {
         this.viewportContext = this.viewportCanvas.getContext('2d');
         this.thumbnailCanvas = <HTMLCanvasElement>document.getElementById('thumbnail-canvas');
         this.thumbnailContext = this.thumbnailCanvas.getContext('2d');
+        this.thumbnailFactor = this.thumbnailCanvas.getBoundingClientRect().width / Canvas.BOARD_WIDTH_PX;
 
         this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this), false);
         this.canvas.addEventListener('touchstart', this.onMouseDown.bind(this), false);
@@ -524,8 +525,8 @@ export class Canvas {
         const v = this.viewportCanvas.getBoundingClientRect();
         const cx = c.left - v.left;
         const cy = c.top - v.top;
-        const tWidth = (v.width / c.width) * Canvas.BOARD_WIDTH_PX * Canvas.THUMBNAIL_FACTOR;
-        const tHeight = (v.height / c.height) * Canvas.BOARD_HEIGHT_PX * Canvas.THUMBNAIL_FACTOR;
+        const tWidth = (v.width / c.width) * Canvas.BOARD_WIDTH_PX * this.thumbnailFactor;
+        const tHeight = (v.height / c.height) * Canvas.BOARD_HEIGHT_PX * this.thumbnailFactor;
 
         let sx = 0;
         let sy = 0;
@@ -533,32 +534,33 @@ export class Canvas {
         let sh = Canvas.BOARD_HEIGHT_PX;
         let dx = 0;
         let dy = 0;
-        let dw = Canvas.BOARD_WIDTH_PX * Canvas.THUMBNAIL_FACTOR;
-        let dh = Canvas.BOARD_HEIGHT_PX *  Canvas.THUMBNAIL_FACTOR;
-
-        this.thumbnailContext.mozImageSmoothingEnabled = false;
-        this.thumbnailContext.webkitImageSmoothingEnabled = false;
-        (<any>this.thumbnailContext).msImageSmoothingEnabled = false;
-        this.thumbnailContext.imageSmoothingEnabled = false;
-        this.thumbnailContext.drawImage(this.canvas, sx, sy, sw, sh, dx, dy, dw, dh);
+        let dw = Canvas.BOARD_WIDTH_PX * this.thumbnailFactor;
+        let dh = Canvas.BOARD_HEIGHT_PX *  this.thumbnailFactor;
 
         // Draw rectangle that represents the viewport
         // More precise and self-contained than using this.zoomScale
         const zoomScale = c.width / Canvas.BOARD_WIDTH_PX;
 
         const topLeft: Point2D = {
-            x: -cx * Canvas.THUMBNAIL_FACTOR / zoomScale,
-            y: -cy * Canvas.THUMBNAIL_FACTOR / zoomScale
+            x: -cx * this.thumbnailFactor / zoomScale,
+            y: -cy * this.thumbnailFactor / zoomScale
         };
 
-        this.thumbnailContext.beginPath();
-        this.thumbnailContext.moveTo(topLeft.x, topLeft.y);
-        this.thumbnailContext.lineTo(topLeft.x + tWidth, topLeft.y);
-        this.thumbnailContext.lineTo(topLeft.x + tWidth, topLeft.y + tHeight);
-        this.thumbnailContext.lineTo(topLeft.x, topLeft.y + tHeight);
-        this.thumbnailContext.lineTo(topLeft.x, topLeft.y);
-        this.thumbnailContext.stroke();
-        this.thumbnailContext.closePath();
+        this.thumbnailContext.mozImageSmoothingEnabled = false;
+        this.thumbnailContext.webkitImageSmoothingEnabled = false;
+        (<any>this.thumbnailContext).msImageSmoothingEnabled = false;
+        this.thumbnailContext.imageSmoothingEnabled = false;
+
+        // Background darker
+        this.thumbnailContext.clearRect(0, 0, dw, dh);
+        this.thumbnailContext.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        this.thumbnailContext.fillRect(0, 0, dw, dh);
+        // Draw mask
+        this.thumbnailContext.clearRect(topLeft.x, topLeft.y, tWidth, tHeight);
+
+        // Draw image
+        this.thumbnailContext.globalCompositeOperation = 'destination-over';
+        this.thumbnailContext.drawImage(this.canvas, sx, sy, sw, sh, dx, dy, dw, dh);
     }
 
     /**

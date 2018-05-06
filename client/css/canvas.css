@@ -291,5 +291,5 @@ body {
     text-align: center;
     right: 20px;
     bottom: 20px;
-    border: 1px solid black;
+    box-shadow: -2px 2px 5px 0 rgba(0,0,0,0.5);
 }
