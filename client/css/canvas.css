@@ -285,3 +285,11 @@ body {
     background: url("../img/Zoom_out_on_hover.svg") no-repeat;
     background-size:cover;
 }
+
+#thumbnail-canvas {
+    position: absolute;
+    text-align: center;
+    right: 20px;
+    bottom: 20px;
+    box-shadow: -2px 2px 5px 0 rgba(0,0,0,0.5);
+}

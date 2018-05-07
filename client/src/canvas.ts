@@ -76,6 +76,8 @@ export class Canvas {
     private context: CanvasRenderingContext2D;
     private viewportCanvas: HTMLCanvasElement;
     private viewportContext: CanvasRenderingContext2D;
+    private thumbnailCanvas: HTMLCanvasElement;
+    private thumbnailContext: CanvasRenderingContext2D;
 
     private currentPositionStr: KnockoutObservable<string>;
     private availableColors: KnockoutObservableArray<CanvasColor>;
@@ -90,6 +92,7 @@ export class Canvas {
     private lastMouseDownPosition: Point2D;
     private totalDragDistance: number;
     public drawMode: KnockoutObservable<DrawModes>;
+    private thumbnailFactor: number;
 
     // This array buffer will hold color data to be drawn to the canvas.
     private buffer: ArrayBuffer;
@@ -129,6 +132,9 @@ export class Canvas {
         this.context = this.canvas.getContext('2d');
         this.viewportCanvas = <HTMLCanvasElement>document.getElementById('viewport-canvas');
         this.viewportContext = this.viewportCanvas.getContext('2d');
+        this.thumbnailCanvas = <HTMLCanvasElement>document.getElementById('thumbnail-canvas');
+        this.thumbnailContext = this.thumbnailCanvas.getContext('2d');
+        this.thumbnailFactor = this.thumbnailCanvas.getBoundingClientRect().width / Canvas.BOARD_WIDTH_PX;
 
         this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this), false);
         this.canvas.addEventListener('touchstart', this.onMouseDown.bind(this), false);
@@ -510,7 +516,51 @@ export class Canvas {
         (<any>this.viewportContext).msImageSmoothingEnabled = false;
         this.viewportContext.imageSmoothingEnabled = false;
         this.viewportContext.drawImage(this.canvas, sx, sy, sw, sh, dx, dy, dw, dh);
-        // console.log('updateViewportCanvas', sx, sy, sw, sh, dx, dy, dw, dh);
+
+        this.updateThumbnailCanvas();
+    }
+
+    private updateThumbnailCanvas() {
+        const c = this.canvas.getBoundingClientRect();
+        const v = this.viewportCanvas.getBoundingClientRect();
+        const cx = c.left - v.left;
+        const cy = c.top - v.top;
+        const tWidth = (v.width / c.width) * Canvas.BOARD_WIDTH_PX * this.thumbnailFactor;
+        const tHeight = (v.height / c.height) * Canvas.BOARD_HEIGHT_PX * this.thumbnailFactor;
+
+        let sx = 0;
+        let sy = 0;
+        let sw = Canvas.BOARD_WIDTH_PX;
+        let sh = Canvas.BOARD_HEIGHT_PX;
+        let dx = 0;
+        let dy = 0;
+        let dw = Canvas.BOARD_WIDTH_PX * this.thumbnailFactor;
+        let dh = Canvas.BOARD_HEIGHT_PX *  this.thumbnailFactor;
+
+        // Draw rectangle that represents the viewport
+        // More precise and self-contained than using this.zoomScale
+        const zoomScale = c.width / Canvas.BOARD_WIDTH_PX;
+
+        const topLeft: Point2D = {
+            x: -cx * this.thumbnailFactor / zoomScale,
+            y: -cy * this.thumbnailFactor / zoomScale
+        };
+
+        this.thumbnailContext.mozImageSmoothingEnabled = false;
+        this.thumbnailContext.webkitImageSmoothingEnabled = false;
+        (<any>this.thumbnailContext).msImageSmoothingEnabled = false;
+        this.thumbnailContext.imageSmoothingEnabled = false;
+
+        // Background darker
+        this.thumbnailContext.clearRect(0, 0, dw, dh);
+        this.thumbnailContext.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        this.thumbnailContext.fillRect(0, 0, dw, dh);
+        // Draw mask
+        this.thumbnailContext.clearRect(topLeft.x, topLeft.y, tWidth, tHeight);
+
+        // Draw image
+        this.thumbnailContext.globalCompositeOperation = 'destination-over';
+        this.thumbnailContext.drawImage(this.canvas, sx, sy, sw, sh, dx, dy, dw, dh);
     }
 
     /**
